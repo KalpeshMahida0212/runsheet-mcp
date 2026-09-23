@@ -1,0 +1,41 @@
+{
+  "name": "runsheet-mcp",
+  "version": "1.0.0",
+  "description": "Runsheet's local MCP server. Uploads videos from your own machine straight to YouTube and schedules them, and forwards the rest of Runsheet's YouTube toolkit to Claude, Cursor or any MCP client.",
+  "license": "MIT",
+  "author": "Kalpesh Mahida",
+  "type": "module",
+  "mcpName": "in.buildifyapp.runsheet/youtube-scheduler",
+  "bin": {
+    "runsheet-mcp": "src/index.mjs"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "llms-install.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KalpeshMahida0212/runsheet-mcp.git"
+  },
+  "homepage": "https://runsheet.buildifyapp.in/mcp",
+  "bugs": {
+    "url": "https://github.com/KalpeshMahida0212/runsheet-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "model context protocol",
+    "mcp-server",
+    "youtube",
+    "claude",
+    "cursor",
+    "upload",
+    "scheduler",
+    "runsheet"
+  ]
+}
