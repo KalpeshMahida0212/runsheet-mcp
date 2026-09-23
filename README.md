@@ -57,7 +57,7 @@ The key goes in the `RUNSHEET_API_KEY` environment variable.
 **Claude Code**
 
 ```sh
-claude mcp add runsheet --env RUNSHEET_API_KEY=rsk_live_your_key_here -- npx -y runsheet-mcp
+claude mcp add --env RUNSHEET_API_KEY=rsk_live_your_key_here --transport stdio runsheet -- npx -y runsheet-mcp
 ```
 
 **Cursor**: add this to `~/.cursor/mcp.json` (all projects) or `.cursor/mcp.json` (one project).

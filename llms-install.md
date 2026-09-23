@@ -19,7 +19,7 @@ The server needs one environment variable, `RUNSHEET_API_KEY`.
 ### Claude Code
 
 ```sh
-claude mcp add runsheet --env RUNSHEET_API_KEY=rsk_live_... -- npx -y runsheet-mcp
+claude mcp add --env RUNSHEET_API_KEY=rsk_live_... --transport stdio runsheet -- npx -y runsheet-mcp
 ```
 
 ### Cursor

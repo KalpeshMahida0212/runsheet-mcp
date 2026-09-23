@@ -348,7 +348,7 @@ async function handle(msg) {
     return reply(id, {
       protocolVersion: PROTOCOL_VERSION,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "runsheet-local", title: "Runsheet (local)", version: "1.0.0" },
+      serverInfo: { name: "runsheet-local", title: "Runsheet (local)", version: "1.0.1" },
       instructions:
         "Runsheet's local toolkit. runsheet_upload_video reads a file from this machine and streams it " +
         "straight to YouTube: the file is never sent to Runsheet. Uploads are always private and can " +
