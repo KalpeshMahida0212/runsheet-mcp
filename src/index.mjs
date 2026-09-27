@@ -283,14 +283,22 @@ async function uploadVideo(args) {
     );
   }
 
+  // "Set" only when YouTube took it: Runsheet reports a refused thumbnail as a warning, and saying
+  // both "Thumbnail set" and "thumbnail failed" left the model to guess which was true.
+  const warnings = done.body?.warnings ?? [];
+  const thumbRefused = warnings.some((w) => /^thumbnail failed/i.test(String(w)));
   const lines = [
     `Uploaded ${basename(path)} as ${created.id}.`,
     scheduledFor
       ? `Private until ${scheduledFor}, when YouTube publishes it itself.`
       : "Private draft with no publish time. Give it one with runsheet_schedule_video, or publish it yourself in Studio.",
     `Detected as a ${kind}${meta ? ` (${meta.width}x${meta.height}${meta.duration ? `, ${Math.round(meta.duration)}s` : ""})` : ""}.`,
-    thumbnailBase64 ? `Thumbnail set from ${basename(thumbPath)}.` : "No thumbnail found next to the file.",
-    ...(done.body?.warnings ?? []),
+    !thumbnailBase64
+      ? "No thumbnail found next to the file."
+      : thumbRefused
+        ? `Sent ${basename(thumbPath)} as the thumbnail, and YouTube did not take it:`
+        : `Thumbnail set from ${basename(thumbPath)}.`,
+    ...warnings,
   ];
   return textResult(lines.join("\n"), false);
 }
@@ -348,7 +356,7 @@ async function handle(msg) {
     return reply(id, {
       protocolVersion: PROTOCOL_VERSION,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "runsheet-local", title: "Runsheet (local)", version: "1.0.1" },
+      serverInfo: { name: "runsheet-local", title: "Runsheet (local)", version: "1.0.2" },
       instructions:
         "Runsheet's local toolkit. runsheet_upload_video reads a file from this machine and streams it " +
         "straight to YouTube: the file is never sent to Runsheet. Uploads are always private and can " +
