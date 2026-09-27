@@ -9,6 +9,9 @@
   "bin": {
     "runsheet-mcp": "src/index.mjs"
   },
+  "scripts": {
+    "build": "node -e \"console.log('runsheet-mcp: plain Node, nothing to build')\""
+  },
   "files": [
     "src",
     "README.md",
