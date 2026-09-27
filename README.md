@@ -117,7 +117,9 @@ publish time at least fifteen minutes away and YouTube publishes it itself at th
 stays a private draft. This is enforced on Runsheet's server, not by a prompt, because a model that
 publishes the wrong file to a real audience cannot take it back.
 
-**It cannot delete anything.** There is no tool for it.
+**It deletes nothing on its own.** Deleting a video is a separate permission on the hosted server,
+never ticked by default: it needs the video's exact title and always waits ten minutes with an Undo
+emailed to the creator.
 
 ## Upload limits
 
@@ -159,6 +161,28 @@ stream.
 
 **`npx` is not found on Windows**: some clients cannot launch `npx` directly. Use
 `"command": "cmd"` and `"args": ["/c", "npx", "-y", "runsheet-mcp"]`.
+
+## Privacy Policy
+
+The full policy is at https://runsheet.buildifyapp.in/privacy. In short, for this extension:
+
+- **What it collects.** Nothing of its own. It runs on your machine and sends your API key, and the
+  arguments of the tools you call, to Runsheet at https://runsheet.buildifyapp.in. When you upload,
+  the video file is streamed from your disk straight to YouTube through a Runsheet upload session; the
+  file itself never passes through or is stored on Runsheet's servers.
+- **How it is used and stored.** Runsheet stores your email, the metadata of videos you plan or
+  publish (titles, descriptions, tags, schedule times), a daily count of views on your own videos,
+  and your API key only as a SHA-256 hash. It records that an AI generation happened and what it
+  cost in credits, to keep your balance, but not the text you sent. Thumbnails the AI designer draws are stored so you can
+  attach them later.
+- **Third parties.** YouTube (Google) receives the uploads and metadata changes you make, through
+  the YouTube Data API. Google's Gemini API receives the text of drafting and thumbnail requests to
+  produce them. Runsheet does not sell or share your data, and does not use YouTube data for
+  advertising.
+- **Retention.** Disconnecting a channel in Runsheet deletes its tokens and what Runsheet recorded
+  for it. Your account and everything in it are deleted within seven days of asking. A revoked API
+  key stops working immediately.
+- **Contact.** kalpesh@buildifyapp.in
 
 ## Links
 
