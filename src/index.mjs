@@ -58,9 +58,9 @@ const UPLOAD_TOOL = {
   name: "runsheet_upload_video",
   description:
     "Upload a video file from THIS machine to YouTube through Runsheet, and schedule it. The file is read from local disk and streamed straight to YouTube; it is never sent to Runsheet's servers. " +
-    "The upload always goes up PRIVATE and can never be published immediately: either give it a publish_at at least fifteen minutes in the future, in which case YouTube publishes it itself at that time, or leave it out and it stays a private draft. " +
+    "Set `privacy` to what the creator chose: public, unlisted or private. Public needs a publish_at at least fifteen minutes in the future, and YouTube keeps the video private until then and makes it public itself (an upload through Runsheet's API never goes public on the spot). Unlisted goes up now and only people with the link can watch it. Private goes up now as a private draft. YouTube can only schedule a video to go public, so publish_at is for public only. Leaving `privacy` out keeps the old behaviour: public at publish_at when there is one, otherwise a private draft. " +
     "Short versus long is detected from the file's dimensions when ffprobe is available, so you usually do not need to pass `kind`. If a thumbnail image sits next to the video with the same name, or is named thumbnail.png, it is picked up automatically. " +
-    "IMPORTANT: until Runsheet's YouTube compliance audit clears, uploads are capped at 25 a day per account and 80 a day across all of Runsheet, so a large batch stops partway through with a message saying when the allowance returns. A channel connected with its own Google client spends its own allowance instead.",
+    "IMPORTANT: until Runsheet's YouTube compliance audit clears, uploads are capped at 25 a day per account and 80 a day across all of Runsheet, so a large batch stops partway through with a message saying when the allowance returns.",
   inputSchema: {
     type: "object",
     properties: {
@@ -68,10 +68,16 @@ const UPLOAD_TOOL = {
       title: { type: "string", description: "The YouTube title. Under 100 characters, no angle brackets." },
       description: { type: "string", description: "The YouTube description. Under 5000 characters." },
       tags: { type: "array", items: { type: "string" }, description: "Up to 60 tags." },
+      privacy: {
+        type: "string",
+        enum: ["public", "unlisted", "private"],
+        description:
+          "Who can watch it: public (needs publish_at; YouTube makes it public at that time), unlisted (goes up now, only people with the link can watch it) or private (goes up now, only the creator can see it). Ask the creator if they have not said.",
+      },
       publish_at: {
         type: "string",
         description:
-          "ISO 8601 timestamp at least fifteen minutes from now, for example 2026-09-24T18:00:00Z. Omit to leave it as a private draft.",
+          "ISO 8601 timestamp at least fifteen minutes from now, for example 2026-09-24T18:00:00Z, when YouTube makes the video public. For public only. Omit for unlisted or private.",
       },
       kind: { type: "string", enum: ["short", "long"], description: "Overrides the detected format." },
       thumbnail_path: { type: "string", description: "Absolute path to a thumbnail image. Under 2MB." },
@@ -218,6 +224,28 @@ async function uploadVideo(args) {
   const stat = statSync(path);
   if (!stat.isFile()) return textResult(`${path} is not a file.`, true);
 
+  /*
+    WHO CAN WATCH IT (1.0.3, 1 October 2026): YouTube's Required Minimum Functionality asks that an
+    uploader lets the creator choose public, private or unlisted. Checked here as well as on the server
+    so the model hears the rule in words before a byte moves.
+  */
+  const privacy = args.privacy === undefined || args.privacy === null ? null : String(args.privacy);
+  if (privacy !== null && privacy !== "public" && privacy !== "unlisted" && privacy !== "private") {
+    return textResult("privacy must be public, unlisted or private.", true);
+  }
+  if (privacy === "public" && !args.publish_at) {
+    return textResult(
+      "A public upload through Runsheet's API needs a publish_at at least fifteen minutes from now: YouTube keeps it private until then and makes it public itself. Or choose unlisted or private to upload it now.",
+      true,
+    );
+  }
+  if ((privacy === "unlisted" || privacy === "private") && args.publish_at) {
+    return textResult(
+      `YouTube can only schedule a video to go public, so a ${privacy} upload takes no publish_at. Leave it out to upload it ${privacy} now, or choose public to schedule it.`,
+      true,
+    );
+  }
+
   const meta = probe(path);
   const kind = args.kind ?? detectKind(meta) ?? "long";
 
@@ -243,6 +271,7 @@ async function uploadVideo(args) {
       sizeBytes: stat.size,
       mimeType: "video/*",
       publishAt: args.publish_at ? String(args.publish_at) : null,
+      ...(privacy ? { privacy } : {}),
     }),
   });
   if (!opened.ok) return textResult(opened.body?.error ?? `Runsheet refused the upload (${opened.status}).`, true);
@@ -290,8 +319,10 @@ async function uploadVideo(args) {
   const lines = [
     `Uploaded ${basename(path)} as ${created.id}.`,
     scheduledFor
-      ? `Private until ${scheduledFor}, when YouTube publishes it itself.`
-      : "Private draft with no publish time. Give it one with runsheet_schedule_video, or publish it yourself in Studio.",
+      ? `Private until ${scheduledFor}, when YouTube makes it public itself.`
+      : privacy === "unlisted"
+        ? "Unlisted: it is on YouTube now, and only people with the link can watch it."
+        : "Private draft with no publish time. Give it one with runsheet_schedule_video, or publish it yourself in Studio.",
     `Detected as a ${kind}${meta ? ` (${meta.width}x${meta.height}${meta.duration ? `, ${Math.round(meta.duration)}s` : ""})` : ""}.`,
     !thumbnailBase64
       ? "No thumbnail found next to the file."
@@ -356,7 +387,7 @@ async function handle(msg) {
     return reply(id, {
       protocolVersion: PROTOCOL_VERSION,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "runsheet-local", title: "Runsheet (local)", version: "1.0.2" },
+      serverInfo: { name: "runsheet-local", title: "Runsheet (local)", version: "1.0.3" },
       instructions:
         "Runsheet's local toolkit. runsheet_upload_video reads a file from this machine and streams it " +
         "straight to YouTube: the file is never sent to Runsheet. Uploads are always private and can " +

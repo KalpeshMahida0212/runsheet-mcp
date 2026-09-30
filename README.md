@@ -97,7 +97,7 @@ Local, only in this package:
 | Tool | What it does |
 |---|---|
 | `runsheet_list_local_videos` | Lists video files in a folder with size, duration, orientation and whether a thumbnail sits next to each |
-| `runsheet_upload_video` | Streams a file from your disk to YouTube, private, with an optional publish time and thumbnail |
+| `runsheet_upload_video` | Streams a file from your disk to YouTube as public (at a publish time), unlisted or private, with its title, description, tags and thumbnail |
 
 A thumbnail is picked up automatically if an image sits next to the video with the same name, or is
 named `thumbnail` or `thumbnail_16x9` (`.png`, `.jpg`, `.jpeg` or `.webp`, under 2MB).
@@ -112,10 +112,11 @@ Forwarded to the hosted server, subject to your key's permissions:
 
 ## Two things it will not do
 
-**It cannot publish anything immediately.** An upload always goes up private. Either you give it a
-publish time at least fifteen minutes away and YouTube publishes it itself at that moment, or it
-stays a private draft. This is enforced on Runsheet's server, not by a prompt, because a model that
-publishes the wrong file to a real audience cannot take it back.
+**It cannot make anything public on the spot.** You choose who can watch each upload with `privacy`:
+`public` goes up private and YouTube makes it public itself at a publish time at least fifteen
+minutes away, `unlisted` goes up now for people with the link, and `private` goes up now as a private
+draft. Public right now is left to you, in Runsheet or Studio. This is enforced on Runsheet's server,
+not by a prompt, because a model that publishes the wrong file to a real audience cannot take it back.
 
 **It deletes nothing on its own.** Deleting a video is a separate permission on the hosted server,
 never ticked by default: it needs the video's exact title and always waits ten minutes with an Undo
@@ -131,8 +132,6 @@ Until Runsheet's YouTube API compliance audit clears, uploads are capped at:
 A large batch uploads up to the limit and then stops, with a message saying when the allowance
 returns. YouTube's quota resets at midnight Pacific time.
 
-A channel connected with its own Google client, under Advanced on Runsheet's connect screen, spends
-its own YouTube allowance and is exempt from both limits.
 
 ## Environment variables
 

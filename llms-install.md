@@ -61,10 +61,12 @@ or revoked.
 
 ## Notes
 
-- Uploads always go up private. A `publish_at` at least fifteen minutes in the future makes YouTube
-  publish it at that time; without one it stays a private draft.
+- `privacy` chooses who can watch it: `public` (with a `publish_at` at least fifteen minutes in the
+  future, when YouTube makes it public), `unlisted` (up now, link only) or `private` (up now, a private
+  draft). Without `privacy`, a `publish_at` makes it public at that time and no `publish_at` leaves it
+  a private draft.
 - Until Runsheet's YouTube compliance audit clears, uploads are capped at 25 a day per account and
-  80 a day across Runsheet. A channel connected with its own Google client is exempt.
+  80 a day across Runsheet.
 - The video file is streamed from this machine straight to YouTube and never reaches Runsheet's
   servers.
 - `ffprobe` (part of ffmpeg) is optional and lets the server tell Shorts from long videos by their
