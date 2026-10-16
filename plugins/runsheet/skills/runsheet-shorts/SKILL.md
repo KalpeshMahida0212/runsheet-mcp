@@ -46,7 +46,7 @@ required tool or file is missing. Your own model writes every word; nothing here
 4. **Write each script.** 5 to 8 lines, 20 to 45 seconds spoken (about 2.6 words a second).
    - **The hook:** line one, 9 words or fewer, the tension or the promise.
    - **The ending:** the last line pays it off or gives the next step.
-   - **Emphasis:** mark one or two words per line with `*asterisks*` to show them in the accent colour.
+   - **Emphasis:** mark one or two words per line with `*asterisks*` to show them in the accent color.
    - **Plain language:** short sentences, US English unless the channel speaks another language.
    - **Allowed characters:** no em dashes, no emojis, no hashtags in the script.
    - **True only:** state no number, result, statistic, quote or story that the channel data or the

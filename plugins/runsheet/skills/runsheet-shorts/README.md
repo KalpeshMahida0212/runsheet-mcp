@@ -2,7 +2,7 @@
 
 Claude makes YouTube Shorts for your channel and schedules them with Runsheet. It reads your channel,
 writes each script, renders the Short on your computer (a voice, captions lit word by word as they
-are spoken, your colours or your own clips), checks the frames and schedules it into your open days.
+are spoken, your colors or your own clips), checks the frames and schedules it into your open days.
 Your Claude does all the writing. Runsheet supplies your channel's data, uploads and schedules.
 
 ## Install
@@ -32,7 +32,7 @@ It needs Node 20 or newer and Chrome or Edge. The first run installs the engine'
 | `time` | `10:00` | The time of day each one goes public, in `timeZone` |
 | `timeZone` | yours | An IANA zone, such as `America/New_York` |
 | `theme` | `dark` | `dark` or `light` |
-| `accent` | `#ff4d2e` | The highlight colour |
+| `accent` | `#ff4d2e` | The highlight color |
 | `voice` | `en-US-EmmaMultilingualNeural` | Any Microsoft Edge neural voice |
 | `folder` | `~/Videos/Runsheet Shorts` | Where each Short and its files are kept |
 | `clips` | none | A folder of your own vertical clips or pictures to use behind the words |
