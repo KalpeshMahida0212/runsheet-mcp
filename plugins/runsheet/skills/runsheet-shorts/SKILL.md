@@ -80,6 +80,8 @@ instead of `ls`, `which` or `cat`. The Write tool makes any folder it needs.
    - If `clips` is set, pick a fitting clip or image as `background`.
    - Run `node "<this skill folder>/engine/render.mjs" short.json`. It prints a JSON summary with the
      paths of `short.mp4`, `cover.png` and `sheet.png`.
+   - If it stops because a line takes more than three rows on screen, split that line into two
+     shorter lines and run it again. It checks this before it draws a single frame.
 7. **Look before you schedule.** Open `sheet.png` (every line fully on screen, then the end card) and
    `cover.png` and check:
    - no text is cut off or overlapping,

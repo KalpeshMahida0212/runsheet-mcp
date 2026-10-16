@@ -88,6 +88,8 @@
       const mid = bl.line.image ? 1210 : 900;
       bl.b.style.top = Math.round(mid - h / 2) + "px";
     }
+    // how many rows of text each line takes, so render.mjs can refuse one too long to read at a glance
+    window.rows = blocks.map((bl) => Math.round(bl.b.getBoundingClientRect().height / (parseFloat(bl.b.style.fontSize) * 1.1)));
     window.ready = true;
   };
 

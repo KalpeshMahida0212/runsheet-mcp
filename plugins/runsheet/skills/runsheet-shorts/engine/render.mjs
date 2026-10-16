@@ -127,20 +127,24 @@ async function main() {
   };
   writeFileSync(join(S.out, "timeline.json"), JSON.stringify(timeline, null, 1));
 
-  // 3. the sound: every line at its start, then loudness to about -14 LUFS; music under it if given
-  const voiceWav = join(work, "voice.wav");
+  // 3. the sound: every line at its start and the music under it if given, then loudness to -14 LUFS in two passes,
+  //    measured and then applied as one gain (a single pass undershoots speech with pauses in it by a decibel or more)
+  const premix = join(work, "premix.wav");
   const inputs = clips.flatMap((c) => ["-i", c.file]);
   const delays = clips.map((c, i) => `[${i}:a]adelay=${Math.round(lines[i].start * 1000)}:all=1[a${i}]`).join(";");
-  const mix = `${delays};${clips.map((_, i) => `[a${i}]`).join("")}amix=inputs=${clips.length}:normalize=0,apad,atrim=0:${total.toFixed(3)},loudnorm=I=-14:TP=-1.5:LRA=11[v]`;
-  await ff([...inputs, "-filter_complex", mix, "-map", "[v]", "-ar", "48000", "-ac", "2", voiceWav]);
-  let soundtrack = voiceWav;
+  let graph = `${delays};${clips.map((_, i) => `[a${i}]`).join("")}amix=inputs=${clips.length}:normalize=0,apad,atrim=0:${total.toFixed(3)}[v]`;
   if (S.music) {
-    soundtrack = join(work, "mix.wav");
-    const fadeAt = Math.max(0, total - 1.2).toFixed(2);
-    await ff(["-i", voiceWav, "-stream_loop", "-1", "-i", S.music.path, "-filter_complex",
-      `[1:a]volume=${S.music.volume},atrim=0:${total.toFixed(3)},afade=t=out:st=${fadeAt}:d=1.2[m];[0:a][m]amix=inputs=2:normalize=0:duration=first[o]`,
-      "-map", "[o]", "-ar", "48000", "-ac", "2", soundtrack]);
+    inputs.push("-stream_loop", "-1", "-i", S.music.path);
+    graph += `;[${clips.length}:a]volume=${S.music.volume},atrim=0:${total.toFixed(3)},afade=t=out:st=${Math.max(0, total - 1.2).toFixed(2)}:d=1.2[m]` +
+      ";[v][m]amix=inputs=2:normalize=0:duration=first[o]";
   }
+  await ff([...inputs, "-filter_complex", graph, "-map", S.music ? "[o]" : "[v]", "-ar", "48000", "-ac", "2", premix]);
+  const LOUD = "loudnorm=I=-14:TP=-1.5:LRA=11";
+  const m = JSON.parse((await ff(["-i", premix, "-af", `${LOUD}:print_format=json`, "-f", "null", "-"])).match(/\{[^{}]*"input_i"[^{}]*\}/)[0]);
+  const soundtrack = join(work, "soundtrack.wav");
+  await ff(["-i", premix, "-af",
+    `${LOUD}:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`,
+    "-ar", "48000", "-ac", "2", soundtrack]);
 
   // 4. the frames: the scene in the creator's own browser, one picture per frame, straight into ffmpeg
   const browser = await chromium.launch({ executablePath: findBrowser(), args: ["--allow-file-access-from-files", "--autoplay-policy=no-user-gesture-required", "--hide-scrollbars"] });
@@ -148,6 +152,11 @@ async function main() {
   await page.goto(pathToFileURL(join(HERE, "template", "short.html")).href);
   await page.evaluate((tl) => window.load(tl), timeline);
   await page.waitForFunction(() => window.ready === true, null, { timeout: 30000 });
+  const long = (await page.evaluate(() => window.rows)).map((n, i) => (n > 3 ? `line ${i + 1} takes ${n} rows on screen` : null)).filter(Boolean);
+  if (long.length) {
+    await browser.close();
+    fail(`${long.join("; ")}. Three rows at most: split the line in two, or shorten it.`);
+  }
 
   const video = join(S.out, "short.mp4");
   const frames = Math.ceil(total * FPS);
