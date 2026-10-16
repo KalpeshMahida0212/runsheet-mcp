@@ -91,6 +91,10 @@
     window.ready = true;
   };
 
+  // A line leaves before the next one (or the end card) arrives, so two lines are never on screen at once.
+  const EXIT = 0.18;
+  const leaveAt = (nextStart) => nextStart - 0.2;
+
   window.seek = async (t) => {
     // the soft colour behind everything drifts on a slow sine, so a still frame never looks frozen
     blobs.forEach((b, i) => {
@@ -107,8 +111,7 @@
     for (const bl of blocks) {
       const { line } = bl;
       const next = blocks[blocks.indexOf(bl) + 1];
-      const outAt = next ? next.line.start : T.end.start;
-      const leaving = clamp((t - outAt) / 0.22);
+      const leaving = clamp((t - leaveAt(next ? next.line.start : T.end.start)) / EXIT);
       const visible = t >= line.start - 0.05 && leaving < 1;
       bl.b.style.display = visible ? "block" : "none";
       if (!visible) continue;
@@ -125,13 +128,13 @@
     for (const { c, img, line } of cards) {
       const next = blocks.find((b) => b.line.start > line.start);
       const outAt = next ? next.line.start : T.end.start;
-      const inP = clamp((t - line.start + 0.1) / 0.3), outP = clamp((t - outAt) / 0.22);
+      const inP = clamp((t - line.start + 0.1) / 0.3), outP = clamp((t - leaveAt(outAt)) / EXIT);
       c.style.display = inP > 0 && outP < 1 ? "block" : "none";
       c.style.opacity = String(inP * (1 - outP));
       c.style.transform = `translateY(${(1 - outCubic(inP)) * 40}px) scale(${0.96 + 0.04 * outCubic(inP)})`;
       img.style.transform = `scale(${1 + 0.06 * clamp((t - line.start) / Math.max(0.5, outAt - line.start))})`;
     }
-    const e = clamp((t - T.end.start) / 0.35);
+    const e = clamp((t - T.end.start) / 0.35); // the last line has gone by now (leaveAt), so the two never overlap
     end.style.display = e > 0 ? "flex" : "none";
     end.style.opacity = String(e);
     end.style.transform = `scale(${0.94 + 0.06 * outBack(e)})`;

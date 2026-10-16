@@ -35,6 +35,7 @@ It needs Node 20 or newer and Chrome or Edge. The first run installs the engine'
 | `accent` | `#ff4d2e` | The highlight color |
 | `voice` | `en-US-EmmaMultilingualNeural` | Any Microsoft Edge neural voice |
 | `folder` | `~/Videos/Runsheet Shorts` | Where each Short and its files are kept |
+| `topics` | from the channel | What the channel is about, one line. Used when the library is too small |
 | `clips` | none | A folder of your own vertical clips or pictures to use behind the words |
 
 ## Every week, with no one there
@@ -56,7 +57,7 @@ It runs on your computer while the app is open and the computer is awake.
 2. The command:
 
    ```
-   claude -p "Use the runsheet-shorts skill to fill next week's Shorts" --permission-mode dontAsk --allowedTools "Read" "Write" "Edit" "Glob" "Bash(node *)" "Bash(npm install*)" "mcp__plugin_runsheet_runsheet" --max-turns 200
+   claude -p "Use the runsheet-shorts skill to fill next week's Shorts" --permission-mode dontAsk --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash(node *)" "Bash(npm install*)" "mcp__plugin_runsheet_runsheet" --max-turns 200
    ```
 
    `mcp__plugin_runsheet_runsheet` allows the plugin's Runsheet tools. If `/mcp` shows the server

@@ -23,10 +23,11 @@
     }
 
   Writes short.mp4 (1080x1920, 30 fps, H.264 and AAC, loudness about -14 LUFS), cover.png (a frame at
-  the end of the hook, for the thumbnail), sheet.png (eight frames tiled, to check by eye) and
+  the end of the hook, for the thumbnail), sheet.png (each line fully on screen and the end card, tiled, to
+  check by eye) and
   timeline.json, then prints a JSON summary on stdout.
 */
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve, isAbsolute } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright-core";
@@ -174,11 +175,18 @@ async function main() {
   await page.evaluate((x) => window.seek(x), Math.min(hook.end - 0.05, hook.words[hook.words.length - 1].t1 + 0.25));
   const cover = join(S.out, "cover.png");
   await page.screenshot({ path: cover, type: "png" });
-  await browser.close();
 
-  // 6. eight frames tiled, so the result can be checked by eye before it goes anywhere
+  // 6. every line fully on screen, then the end card, tiled, so each can be checked by eye before it goes anywhere
+  const moments = [...lines.map((l) => l.end - 0.02), endStart + 1];
+  for (const f of readdirSync(work)) if (/^sheet-\d+\.jpg$/.test(f)) rmSync(join(work, f)); // an earlier, longer render's frames
+  for (const [i, m] of moments.entries()) {
+    await page.evaluate((x) => window.seek(x), m);
+    await page.screenshot({ path: join(work, `sheet-${String(i).padStart(2, "0")}.jpg`), type: "jpeg", quality: 90 });
+  }
+  await browser.close();
   const sheet = join(S.out, "sheet.png");
-  await ff(["-i", video, "-vf", `fps=${(8 / total).toFixed(5)},scale=270:480,tile=4x2:padding=6:color=0x222222`, "-frames:v", "1", sheet]);
+  const cols = Math.ceil(moments.length / 2);
+  await ff(["-i", join(work, "sheet-%02d.jpg"), "-vf", `scale=270:480,tile=${cols}x2:padding=6:color=0x222222`, "-frames:v", "1", sheet]);
 
   const len = await duration(video);
   process.stdout.write(JSON.stringify({

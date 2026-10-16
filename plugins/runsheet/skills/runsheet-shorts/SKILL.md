@@ -20,8 +20,16 @@ required tool or file is missing. Your own model writes every word; nothing here
    these defaults, and tell the creator once that it is there:
    `{ "perWeek": 7, "time": "10:00", "timeZone": "<the creator's IANA zone>", "theme": "dark",
    "accent": "#ff4d2e", "voice": "en-US-EmmaMultilingualNeural", "folder": "~/Videos/Runsheet Shorts",
-   "brand": "<channel name>", "handle": "<@handle if known>", "clips": null }`.
+   "brand": "<channel name>", "handle": "<@handle if known>", "topics": "<what the channel is about, one line>", "clips": null }`.
    `clips` may name a folder of the creator's own vertical clips or images to use as backgrounds.
+   `topics` is what the channel is about, in one line. Fill it from the channel's own description
+   and titles.
+
+## Working unattended
+
+This often runs with no one at the keyboard, where only `node` and `npm install` may be allowed in the
+shell. Run each shell command on its own, with no `&&`, `;` or pipes. Look around with Glob and Read
+instead of `ls`, `which` or `cat`. The Write tool makes any folder it needs.
 
 ## The loop
 
@@ -36,6 +44,8 @@ required tool or file is missing. Your own model writes every word; nothing here
      so the creator can still pull it.
    - **One a day:** a day that already has a Short is skipped, and there are never two Shorts on one day.
 3. **Choose the topics.** One topic for each day.
+   - **A new channel:** with fewer than five videos in the library, base them on `topics` and the
+     channel's description instead, and say so in the report.
    - Each comes from what this channel already makes and what worked.
    - Each makes one clear promise.
    - No topic repeats a title from the library or the schedule in the last 60 days, and no two in this
@@ -51,19 +61,27 @@ required tool or file is missing. Your own model writes every word; nothing here
    - **Allowed characters:** no em dashes, no emojis, no hashtags in the script.
    - **True only:** state no number, result, statistic, quote or story that the channel data or the
      creator's own words do not give you. General advice and opinion are fine.
+   - **Advice, not verdicts about everyone:** no "most channels", "most creators", "nobody", "always"
+     or "never" claims, and no claims about why channels grow or fail. Say it as advice or as the
+     creator's own view: "Post on the same day every week", not "Most channels fail because they post
+     at random".
+   - **No tools named:** never mention Runsheet, Claude or any other tool in the script, title,
+     description or tags, unless the channel itself is about that tool.
 5. **Write the metadata.**
-   - **Title:** 60 characters or fewer, the phrase people search for first, then ` #Shorts`.
+   - **Title:** 60 characters or fewer, the phrase people search for first, then ` #Shorts`. The same
+     rules as the script: no "most", "never" or "always" claims, nothing it cannot back up.
    - **Description:** two or three short lines, then three relevant hashtags.
    - **Tags:** 5 to 10.
 6. **Render.**
-   - Make a folder `<folder>/<YYYY-MM-DD> <short-slug>/` and write `short.json` there. The format is at
-     the top of `engine/render.mjs`.
+   - Write `short.json` into a new folder `<folder>/<YYYY-MM-DD> <short-slug>/`. The format is at the
+     top of `engine/render.mjs`.
    - Set `brand`, `theme`, `accent`, `voice` and `end` from the settings. For `end.sub`, use one short
      line such as "Follow for more" or the handle.
    - If `clips` is set, pick a fitting clip or image as `background`.
    - Run `node "<this skill folder>/engine/render.mjs" short.json`. It prints a JSON summary with the
      paths of `short.mp4`, `cover.png` and `sheet.png`.
-7. **Look before you schedule.** Open `sheet.png` and `cover.png` and check:
+7. **Look before you schedule.** Open `sheet.png` (every line fully on screen, then the end card) and
+   `cover.png` and check:
    - no text is cut off or overlapping,
    - nothing is misspelled,
    - no line runs over three lines on screen,
