@@ -3,6 +3,7 @@
 Claude makes YouTube Shorts for your channel and schedules them with Runsheet. It reads your channel,
 writes each script, renders the Short on your computer (a voice, captions lit word by word as they
 are spoken, your colors or your own clips), checks the frames and schedules it into your open days.
+It also cuts Shorts out of your own long videos, with captions that follow what you say.
 Your Claude does all the writing. Runsheet supplies your channel's data, uploads and schedules.
 
 ## Install
@@ -37,6 +38,19 @@ It needs Node 20 or newer and Chrome or Edge. The first run installs the engine'
 | `folder` | `~/Videos/Runsheet Shorts` | Where each Short and its files are kept |
 | `topics` | from the channel | What the channel is about, one line. Used when the library is too small |
 | `clips` | none | A folder of your own vertical clips or pictures to use behind the words |
+| `longVideos` | none | A folder of your own long videos; each run cuts Shorts from the newest one not cut yet |
+
+## Shorts from your long videos
+
+Give it a long video ("Cut Shorts from C:/Videos/episode-12.mp4"), or set `longVideos` and let the
+weekly run take the newest one. It hears every word on your computer (Whisper, run locally), reads
+the whole transcript, picks moments that stand on their own, frames a face or keeps the whole screen,
+lights each caption word as it is said, checks the frames and schedules them like any other Short.
+`CLIPS.md` has the steps it follows.
+
+It needs one more install, once: `npm install` in `engine/stt` (about 470 MB). The speech model
+downloads on the first run (about 290 MB). In testing, 7.5 minutes of video took about a minute to
+hear, and each clip about 90 seconds to render.
 
 ## Every week, with no one there
 
@@ -88,4 +102,13 @@ node render.mjs path/to/short.json
 ```
 
 The format of `short.json` is at the top of `engine/render.mjs`. It writes `short.mp4` (1080x1920,
-30 fps, about -14 LUFS), `cover.png` and `sheet.png`, and prints a JSON summary.
+30 fps, -14 LUFS), `cover.png` and `sheet.png`, and prints a JSON summary.
+
+For clips from a long video (after `npm install` in `engine/stt`):
+
+```
+node clip.mjs transcribe path/to/video.mp4 --out path/to/folder
+node clip.mjs render path/to/clip.json
+```
+
+The format of `clip.json` is at the top of `engine/clip.mjs`.

@@ -1,0 +1,17 @@
+{
+  "name": "runsheet-shorts-stt",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Speech to text for cutting Shorts from a long video: Whisper on your own computer through transformers.js. Only clip.mjs transcribe needs it.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "4.3.1"
+  },
+  "allowScripts": {
+    "onnxruntime-node@1.30.0": true,
+    "protobufjs@7.6.6": true
+  }
+}

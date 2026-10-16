@@ -1,6 +1,6 @@
 ---
 name: runsheet-shorts
-description: "Makes YouTube Shorts for the creator's channel and schedules them through Runsheet, start to finish with no questions. Reads the channel, picks topics, writes each script, renders each Short on this computer with a voice and synced captions, checks the frames, and schedules it into the next open days. Use when the user asks to make Shorts, fill the week or month with videos, automate their channel's Shorts, or run the weekly Shorts job."
+description: "Makes YouTube Shorts for the creator's channel and schedules them through Runsheet, start to finish with no questions. Reads the channel, picks topics, writes each script, renders each Short on this computer with a voice and synced captions, checks the frames, and schedules it into the next open days. It also cuts Shorts out of the creator's own long videos, with captions that follow the speech. Use when the user asks to make Shorts, fill the week or month with videos, automate their channel's Shorts, cut Shorts or clips from a long video, podcast or stream, or run the weekly Shorts job."
 ---
 
 # Runsheet Shorts: from the channel to a scheduled Short, by itself
@@ -20,10 +20,11 @@ required tool or file is missing. Your own model writes every word; nothing here
    these defaults, and tell the creator once that it is there:
    `{ "perWeek": 7, "time": "10:00", "timeZone": "<the creator's IANA zone>", "theme": "dark",
    "accent": "#ff4d2e", "voice": "en-US-EmmaMultilingualNeural", "folder": "~/Videos/Runsheet Shorts",
-   "brand": "<channel name>", "handle": "<@handle if known>", "topics": "<what the channel is about, one line>", "clips": null }`.
+   "brand": "<channel name>", "handle": "<@handle if known>", "topics": "<what the channel is about, one line>", "clips": null,
+   "longVideos": null }`.
    `clips` may name a folder of the creator's own vertical clips or images to use as backgrounds.
    `topics` is what the channel is about, in one line. Fill it from the channel's own description
-   and titles.
+   and titles. `longVideos` may name a folder of the creator's own long videos to cut Shorts from.
 
 ## Working unattended
 
@@ -44,6 +45,9 @@ instead of `ls`, `which` or `cat`. The Write tool makes any folder it needs.
      so the creator can still pull it.
    - **One a day:** a day that already has a Short is skipped, and there are never two Shorts on one day.
 3. **Choose the topics.** One topic for each day.
+   - **Long videos first:** when the creator names a long video, or `longVideos` holds one not cut
+     yet, fill the days with moments from it by following `CLIPS.md` in this folder, then make script
+     Shorts for any days left.
    - **A new channel:** with fewer than five videos in the library, base them on `topics` and the
      channel's description instead, and say so in the report.
    - Each comes from what this channel already makes and what worked.
