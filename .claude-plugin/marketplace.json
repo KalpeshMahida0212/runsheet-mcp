@@ -1,0 +1,15 @@
+{
+  "name": "runsheet",
+  "description": "Runsheet, the YouTube scheduler: plugins that let Claude make, plan, write and schedule videos for your channel.",
+  "owner": {
+    "name": "Kalpesh Mahida",
+    "url": "https://runsheet.buildifyapp.in"
+  },
+  "plugins": [
+    {
+      "name": "runsheet",
+      "source": "./plugins/runsheet",
+      "description": "Your Claude makes YouTube Shorts and schedules them with Runsheet, plans your weeks, writes your copy and reviews your channel."
+    }
+  ]
+}

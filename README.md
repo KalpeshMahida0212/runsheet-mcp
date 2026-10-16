@@ -11,6 +11,27 @@ npx -y runsheet-mcp
 Published on npm as [`runsheet-mcp`](https://www.npmjs.com/package/runsheet-mcp). No install step,
 no dependencies, Node 20 or newer.
 
+## Claude makes your Shorts: the Claude Code plugin
+
+This repository is also a Claude Code plugin marketplace. The `runsheet` plugin wires this server in
+and adds four skills your own Claude runs:
+
+| Skill | What it does |
+|---|---|
+| `runsheet-shorts` | Makes YouTube Shorts on your computer (a voice, captions in step with it) and schedules them |
+| `runsheet-plan` | Plans your next weeks from your own channel |
+| `runsheet-write` | Writes and saves titles, descriptions, tags, chapters, translations and posts |
+| `runsheet-review` | A weekly review of what beat your own numbers |
+
+```
+/plugin marketplace add KalpeshMahida0212/runsheet-mcp
+/plugin install runsheet@runsheet
+```
+
+Paste a Runsheet API key when it asks, then say "Fill next week's Shorts". It can run every week with
+no one there; see [plugins/runsheet/skills/runsheet-shorts](plugins/runsheet/skills/runsheet-shorts).
+More at https://runsheet.buildifyapp.in/claude.
+
 ## What it does
 
 - **Uploads a video file from your disk to YouTube and schedules it.** The file is streamed from

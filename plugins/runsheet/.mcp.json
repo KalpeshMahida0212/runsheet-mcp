@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "runsheet": {
+      "command": "npx",
+      "args": ["-y", "runsheet-mcp"],
+      "env": { "RUNSHEET_API_KEY": "${user_config.runsheet_api_key}" }
+    }
+  }
+}

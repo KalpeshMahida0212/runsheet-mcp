@@ -1,0 +1,18 @@
+{
+  "name": "runsheet",
+  "version": "1.0.0",
+  "description": "Runsheet for Claude: your Claude makes YouTube Shorts on your own computer and schedules them, plans your next weeks from your channel, writes and saves titles, descriptions and translations, and reviews what worked. Your Claude does the writing; Runsheet supplies the channel's data and does the uploading and scheduling.",
+  "author": { "name": "Kalpesh Mahida", "url": "https://runsheet.buildifyapp.in" },
+  "homepage": "https://runsheet.buildifyapp.in/claude",
+  "repository": "https://github.com/KalpeshMahida0212/runsheet-mcp",
+  "license": "MIT",
+  "keywords": ["youtube", "shorts", "scheduler", "video", "runsheet", "mcp"],
+  "userConfig": {
+    "runsheet_api_key": {
+      "type": "string",
+      "title": "Runsheet API key",
+      "description": "Make one in Runsheet: Settings, API keys. Tick Read, Write, Write copy and Upload from this machine.",
+      "sensitive": true
+    }
+  }
+}
