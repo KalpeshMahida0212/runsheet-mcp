@@ -98,6 +98,21 @@ import { parseReport } from "./lib/ff.mjs";
   assert.ok(P.captions.length > 0 && P.hits.some((h) => Math.abs(h.t - (slam.start + slam.cues.slam)) < 1e-9));
 }
 
+// items that start alike land on their own words, in order, not on the first word they share
+{
+  const clip = (text, dur = 6) => ({ duration: dur, words: text.split(" ").map((t, i) => ({ text: t, t0: 0.1 + i * 0.3, t1: 0.35 + i * 0.3 })) });
+  const say = "Good ideas come from what already worked, what viewers ask, and what breaks out nearby.";
+  const scenes = readScenes({ scenes: [
+    { type: "hook", say: "Three places.", text: "Three *places*" },
+    { type: "list", say, text: "Where ideas come from", items: ["What already worked", "What viewers ask", "What breaks out nearby"] },
+    { type: "end", say: "Follow.", sub: "@me" },
+  ] }, (p) => p).scenes;
+  const P = plan(scenes, scenes.map((s) => clip(s.say, s.type === "list" ? 6 : 1.5)));
+  const list = P.scenes[1], words = say.split(" ");
+  const said = (n) => list.voiceAt + 0.1 + words.findIndex((w, i) => /^what/i.test(w) && words.slice(0, i).filter((x) => /^what/i.test(x)).length === n) * 0.3 - 0.05;
+  list.items.forEach((it, k) => assert.ok(Math.abs(it.at - said(k)) < 0.01, `item ${k + 1} lands on its own "what" (${it.at.toFixed(2)} vs ${said(k).toFixed(2)})`));
+}
+
 // colours: white text on the fill and the accent text on cream stay readable, even from a pale accent
 {
   const th = themeOf("#f5d76e");

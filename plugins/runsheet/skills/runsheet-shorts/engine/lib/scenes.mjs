@@ -202,10 +202,21 @@ function cue(s) {
     }
     return words(text).map((t, k) => ({ ...t, at: from + k * 0.1 }));
   };
+  /*
+    EACH ITEM IS LOOKED FOR AFTER THE ONE BEFORE IT, in the words still to come. Matched against the whole line, an item
+    that starts like an earlier one ("What already worked", "What viewers ask") landed on the first "what" and showed
+    before it was said (found 18 Oct 2026); items are spoken in order, so they are found in order.
+  */
   const spread = (texts, a, b) => {
-    const at = texts.map((tx, k) => {
-      const m = sayAt(tx, sp, len);
-      return m.first && m.heard > 0 ? m.first.t0 - 0.05 : null;
+    let from = 0;
+    const at = texts.map((tx) => {
+      const rest = sp.slice(from);
+      const m = sayAt(tx, rest, len);
+      if (!(m.first && m.heard > 0)) return null;
+      const last = m.tk.filter((t) => t.heard).pop();
+      const k = rest.findIndex((w) => w.t0 === last.t0);
+      if (k >= 0) from += k + 1;
+      return m.first.t0 - 0.05;
     });
     const n = texts.length;
     return at.map((v, k) => (v != null ? v : a + ((b - a) * (k + 0.2)) / n));
