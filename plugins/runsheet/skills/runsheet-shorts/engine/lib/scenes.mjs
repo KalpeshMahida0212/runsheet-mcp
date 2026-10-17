@@ -20,8 +20,13 @@ export const TYPES = {
   chat: { need: ["messages"], may: ["text"] },
   image: { need: ["src", "text"], may: [] },
   strike: { need: ["wrong"], may: ["right"] },
+  // a long video's section card: its title becomes a YouTube chapter at the moment it appears
+  chapter: { need: ["text"], may: ["kicker"] },
   end: { need: [], may: ["text", "sub", "stamp"] },
 };
+
+/** How many scenes a video may have: a Short is under a minute of lines, a long video up to about twelve minutes. */
+export const SCENE_COUNT = { short: [2, 14], long: [6, 160] };
 const COMMON = ["type", "say", "ground", "enter"];
 const GROUNDS = ["light", "dark", "punch"];
 const ENTERS = ["slide", "flood", "dome", "zoom", "cut"];
@@ -34,7 +39,7 @@ const LEAD = 0.35, GAP = 0.3, PRE = 0.15, TAIL = 0.7, OVERLAP = 0.45, END_SILENT
  * The scenes of a spec, checked. The old format (`lines`, a list of sentences, and `end`) becomes a hook, plain text
  * scenes and an end card, so a script written for the first engine still renders.
  */
-export function readScenes(s, abs) {
+export function readScenes(s, abs, { long = false } = {}) {
   const errors = [];
   let scenes = s.scenes;
   if (!Array.isArray(scenes)) {
@@ -46,7 +51,9 @@ export function readScenes(s, abs) {
     });
     scenes.push({ type: "end", text: "", sub: s.end?.sub || (s.brand?.handle ? `Follow ${s.brand.handle}` : "") });
   }
-  if (scenes.length < 2 || scenes.length > 14) errors.push(`a Short has 2 to 14 scenes; this one has ${scenes.length}.`);
+  const [lo, hi] = SCENE_COUNT[long ? "long" : "short"];
+  if (scenes.length < lo || scenes.length > hi) errors.push(`a ${long ? "long video" : "Short"} has ${lo} to ${hi} scenes; this one has ${scenes.length}.`);
+  if (!long && scenes.some((sc) => sc.type === "chapter")) errors.push(`chapter scenes are for long videos ("shape": "16x9"); a Short has no chapters.`);
   const out = scenes.map((raw, i) => {
     const sc = { ...raw }, no = i + 1, type = sc.type;
     const bad = (m) => errors.push(`scene ${no} (${type}): ${m}`);
@@ -72,6 +79,8 @@ export function readScenes(s, abs) {
     }
     if (type === "stat" && !/\d/.test(String(sc.value ?? ""))) bad(`"value" is a number as shown, like "3x", "47%" or "$1,200".`);
     if (type === "slam" && String(sc.text ?? "").split(/\s+/).length > 2) bad(`a slam is one or two words.`);
+    // a chapter's name is a YouTube chapter label and a line in the styles' contents lists
+    if (type === "chapter" && String(sc.text ?? "").split(/\s+/).filter(Boolean).length > 6) bad(`a chapter's name is six words at most.`);
     if (type === "image") { sc.src = abs(sc.src); }
     return sc;
   });
@@ -139,7 +148,7 @@ export function plan(scenes, clips, { theme = "light" } = {}) {
   scenes.forEach((sc, i) => {
     const c = clips[i];
     const s = { ...sc, no: i + 1, mood: i % 4 };
-    s.ground = sc.type === "slam" ? "dark" : sc.ground ?? (sc.type === "stat" || sc.type === "punch" ? "punch" : base);
+    s.ground = sc.type === "slam" ? "dark" : sc.ground ?? (sc.type === "stat" || sc.type === "punch" ? "punch" : sc.type === "chapter" ? "dark" : base);
     const prev = out[i - 1];
     s.enter = sc.enter ?? (i === 0 ? "cut" : sc.type === "slam" ? "zoom" : s.ground === "punch" ? "flood" : s.ground === "dark" && prev?.ground !== "dark" ? "dome" : s.ground === "light" && prev && prev.ground !== "light" ? "flood" : "slide");
     // a riser needs a beat before the accent floods in
@@ -255,6 +264,11 @@ function cue(s) {
       s.head = head(s.text);
       break;
     }
+    case "chapter": {
+      s.head = head(s.text, 0.35);
+      s.cues.land = Math.max(0.3, end(s.head) - 0.2);
+      break;
+    }
     case "strike": {
       s.wrongHead = head(s.wrong);
       const m = sayAt(s.wrong, sp, len), heardEnd = m.tk.filter((t) => t.heard).pop();
@@ -313,6 +327,27 @@ function hits(scenes) {
     if (s.enter === "dome" || s.enter === "flood") out.push({ t: s.start + 0.07, amp: 5, decay: 5 });
     if (s.type === "end" && s.cues.stamp != null) out.push({ t: s.start + s.cues.stamp, amp: 7, decay: 4 });
     if (s.type === "hook" && s.icon) out.push({ t: s.start + s.cues.icon, amp: 4, decay: 4 });
+    if (s.type === "chapter") out.push({ t: s.start + s.cues.land, amp: 5, decay: 5 });
   }
   return out;
+}
+
+/*
+  A LONG VIDEO'S CHAPTERS, from its chapter scenes, in YouTube's own format (Help, "Add video chapters"): the first
+  at 0:00, at least three, in order, each at least ten seconds. The opening before the first chapter card is the
+  first chapter, named by `intro`. Returns the lines to paste into the description and, when YouTube would ignore
+  them, the reason.
+*/
+export function chaptersOf(scenes, total, intro = "Intro") {
+  const marks = scenes.filter((s) => s.type === "chapter").map((s) => ({ t: s.start, title: String(s.text).replace(/\*/g, "").trim() }));
+  if (!marks.length) return { lines: [], problem: null };
+  // an opening under ten seconds belongs to the first chapter; a longer one is a chapter of its own
+  if (marks[0].t >= 10) marks.unshift({ t: 0, title: intro });
+  marks[0].t = 0;
+  const clock = (t) => { const x = Math.floor(t); return x >= 3600 ? `${Math.floor(x / 3600)}:${String(Math.floor((x % 3600) / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}` : `${Math.floor(x / 60)}:${String(x % 60).padStart(2, "0")}`; };
+  const lines = marks.map((m) => `${clock(m.t)} ${m.title}`);
+  const ends = marks.map((m, i) => (marks[i + 1]?.t ?? total) - m.t);
+  const problem = marks.length < 3 ? `only ${marks.length} chapters: YouTube needs at least 3, so add chapter scenes or leave chapters out.`
+    : ends.some((d) => d < 10) ? `a chapter is shorter than ten seconds, which YouTube does not allow: move or merge its chapter scene.` : null;
+  return { lines, problem };
 }

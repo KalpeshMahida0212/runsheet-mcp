@@ -41,6 +41,20 @@ words are the picture); the others light each spoken word in captions of their o
 | `image` | The creator's own picture or clip in a card that slowly pushes in | `src` (a path), `text` |
 | `strike` | A wrong idea struck through by a marker, the right one rising under it | `wrong`, `right` (optional) |
 | `end` | Always the last scene. The channel's mark on a sunburst, a typed line, a stamp | `text` (optional), `sub` (the handle or a link), `stamp` (4 words at most, optional) |
+| `chapter` | Long videos only. A section card that opens a part of the video; its title becomes a YouTube chapter at that moment | `text` (the chapter's name, 6 words at most), `kicker` (like "Part 2", optional) |
+
+## Long videos
+
+The same engine makes long videos: put `"shape": "16x9"` in the spec. Each style lays every scene out for the wide
+frame. A long video:
+
+- runs 40 to 100 scenes, three to ten minutes, and writes `video.mp4` (1920x1080) instead of `short.mp4`;
+- opens each part with a `chapter` scene. The renderer turns them into `chapters.txt` in YouTube's format, at their
+  exact times: the opening is folded into the first chapter when it is under ten seconds, and the summary says when
+  YouTube would ignore the list (fewer than three chapters, or one under ten seconds);
+- has no words on screen by default: it writes `captions.srt` for YouTube's own subtitles instead. `"captions": true`
+  turns the on-screen words on;
+- splits its check sheet into pages of twenty scenes: `sheet-1.png`, `sheet-2.png` and on.
 
 ## What makes a good one
 
@@ -84,7 +98,7 @@ zap. Icons are Lucide's (ISC licence).
   "rate": "+8%",
   "music": "auto",
   "style": "studio",
-  "pass": "<from runsheet_start_short>",
+  "pass": "<from runsheet_start_video>",
   "scenes": [
     { "type": "hook", "say": "You post when you remember. Here is a better week.", "text": "Post when you *remember?*", "kicker": "a better week", "icon": "calendar" },
     { "type": "strike", "say": "Not whenever you have time. On the same day, every week.", "wrong": "Whenever you have time", "right": "The same *day*, every week" },

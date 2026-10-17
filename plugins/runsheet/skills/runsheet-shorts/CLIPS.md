@@ -51,8 +51,8 @@ locally and nothing is sent anywhere until the upload.
    - `headline` is the promise of the clip in 6 words or fewer, shown at the top the whole time. One
      `*word*` may be starred.
    - `accent` comes from the settings.
-   - `pass`: every clip is a video, so it needs its own pass. Call `runsheet_start_short` with style
-     `studio` once for this clip, as in SKILL.md, step 6, and put the pass here.
+   - `pass`: every clip is a video, so it needs its own pass. Call `runsheet_start_video` with
+     `kind: "short"` and style `studio` once for this clip, as in SKILL.md, step 6, and put the pass here.
 7. **Render.** Run `node "<this skill folder>/engine/clip.mjs" render clip.json`. It prints the paths of
    `short.mp4`, `cover.png` and `sheet.png`.
    - If the summary has `warnings`, the text does not follow the speech: copy it again from the

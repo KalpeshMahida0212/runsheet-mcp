@@ -476,6 +476,7 @@ export function mixSound({ plan, voices, music = "auto", out, work, profile = {}
       case "chat": s.messages.forEach((m, i) => K.message(word(s, m.at), m.from === "me", i)); break;
       case "image": K.image(s.start); break;
       case "strike": K.strike(word(s, s.cues.strike)); break;
+      case "chapter": K.icon(word(s, s.cues.land)); break;
       case "end":
         K.mark(word(s, s.cues.mark), s.sub);
         if (s.cues.stamp != null) { K.stamp(word(s, s.cues.stamp)); note(word(s, s.cues.stamp), "stamp"); }
@@ -518,8 +519,13 @@ export function mixSound({ plan, voices, music = "auto", out, work, profile = {}
     }
   }
   const scale = SR / 44100;
-  const freeverb = (input, spread) => {
-    const o = new Float32Array(N), room = 0.84 * 0.28 + 0.7, damp = 0.35 * 0.4;
+  /*
+    IN PLACE WHERE NOTHING READS THE OLD VALUES AGAIN (18 Oct 2026, for long videos). The reverb returns overwrite the
+    send buses, the mix overwrites the drum bus, the voice is added into it, and the limiter's gains reuse the music
+    bus: seven fewer full length buffers, the same samples bit for bit. A ten minute video's mix held about 2 GB before.
+  */
+  const freeverb = (input, spread, o = new Float32Array(N)) => {
+    const room = 0.84 * 0.28 + 0.7, damp = 0.35 * 0.4;
     const combs = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617].map((c) => ({ buf: new Float32Array(Math.round((c + spread) * scale)), i: 0, store: 0 }));
     const aps = [556, 441, 341, 225].map((c) => ({ buf: new Float32Array(Math.round((c + spread) * scale)), i: 0 }));
     for (let n = 0; n < N; n++) {
@@ -530,8 +536,8 @@ export function mixSound({ plan, voices, music = "auto", out, work, profile = {}
     }
     return o;
   };
-  const RVL = freeverb(SEND[0], 0), RVR = freeverb(SEND[1], 23);
-  const SL = new Float32Array(N), SRt = new Float32Array(N);
+  const RVL = freeverb(SEND[0], 0, SEND[0]), RVR = freeverb(SEND[1], 23, SEND[1]);
+  const SL = DR[0], SRt = DR[1];
   for (let n = 0; n < N; n++) {
     SL[n] = (DR[0][n] * 0.9 + MU[0][n] * sc[n] * 0.8) * ENV_BED[n] + FX[0][n] * 0.9 * ENV_FX[n] + HT[0][n] * 0.95 * ENV_HIT[n] + RVL[n] * 0.9 * ENV_FX[n];
     SRt[n] = (DR[1][n] * 0.9 + MU[1][n] * sc[n] * 0.8) * ENV_BED[n] + FX[1][n] * 0.9 * ENV_FX[n] + HT[1][n] * 0.95 * ENV_HIT[n] + RVR[n] * 0.9 * ENV_FX[n];
@@ -539,7 +545,7 @@ export function mixSound({ plan, voices, music = "auto", out, work, profile = {}
   let sv = 0, ss = 0;
   for (const ln of lines) for (let k = 0; k < ln.len && ln.start + k < N; k++) { const n = ln.start + k; sv += VOICE[n] * VOICE[n] * 2; ss += SL[n] * SL[n] + SRt[n] * SRt[n]; }
   const vg = ss > 1e-9 ? Math.sqrt(ss / Math.max(1e-9, sv)) * Math.pow(10, 11 / 20) : 1;
-  const L = new Float32Array(N), R = new Float32Array(N);
+  const L = SL, R = SRt;
   for (let n = 0; n < N; n++) { L[n] = SL[n] + VOICE[n] * vg; R[n] = SRt[n] + VOICE[n] * vg; }
   const f0 = Math.round((DUR - 0.9) * SR);
   for (let n = Math.max(0, f0); n < N; n++) { const k = 1 - (n - f0) / (N - f0); L[n] *= k * k; R[n] *= k * k; }
@@ -548,7 +554,7 @@ export function mixSound({ plan, voices, music = "auto", out, work, profile = {}
   let peak = 0;
   for (let n = 0; n < N; n++) peak = Math.max(peak, Math.abs(L[n]), Math.abs(R[n]));
   const gain = 0.5 / Math.max(1e-9, peak), ceil = Math.pow(10, -2.2 / 20), la = Math.round(0.003 * SR);
-  const need = new Float32Array(N);
+  const need = MU[0];
   for (let n = 0; n < N; n++) need[n] = Math.min(1, ceil / Math.max(1e-9, Math.abs(L[n] * gain), Math.abs(R[n] * gain)));
   const rel = Math.exp(-1 / (0.08 * SR));
   const wav = Buffer.alloc(44 + N * 4);

@@ -25,7 +25,7 @@
       "headline": "Why I *stopped* posting daily",   optional, at the top the whole time
       "accent": "#ff4d2e",
       "out": "C:/Videos/Runsheet Shorts/2026-10-20 stopped-daily",
-      "pass": "..."                          this clip's pass, from runsheet_start_short (style "studio"): see lib/pass.mjs
+      "pass": "..."                          this clip's pass, from runsheet_start_video (kind short, style studio): lib/pass.mjs
     }
   Writes short.mp4 (1080x1920, 30 fps, H.264 and AAC, -14 LUFS), cover.png, sheet.png (captions across the clip,
   tiled, to check by eye) and timeline.json, then prints a JSON summary.

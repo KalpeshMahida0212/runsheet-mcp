@@ -5,6 +5,7 @@
 
     node preflight.mjs shorts            making a Short from a script: Node, Chrome or Edge, and the engine
                                          (ffmpeg, the browser driver and the voice, about 90 MB)
+    node preflight.mjs long              making a long video from a script: the same as a Short
     node preflight.mjs clips             cutting Shorts from a long video: the same, plus the speech part
     node preflight.mjs watch <video>     watching a finished video to write its copy: the engine, plus the speech
                                          part only when the video has a sound track (a silent or music-only file
@@ -23,8 +24,8 @@ import { findBrowser } from "./lib/browser.mjs";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const STT = join(HERE, "stt");
 const [job, video] = process.argv.slice(2);
-if (!["shorts", "clips", "watch"].includes(job)) {
-  process.stderr.write("usage: node preflight.mjs shorts | clips | watch <video>\n");
+if (!["shorts", "long", "clips", "watch"].includes(job)) {
+  process.stderr.write("usage: node preflight.mjs shorts | long | clips | watch <video>\n");
   process.exit(1);
 }
 
@@ -37,7 +38,8 @@ if (node >= 20) ready.push(`Node ${process.versions.node}`);
 else fix.push(`Node ${process.versions.node} is too old. Install Node 20 or newer from https://nodejs.org, then run this again.`);
 
 // the engine: ffmpeg encodes and reads video, the browser driver draws frames, the voice is for scripted Shorts
-const base = ["ffmpeg-static", "playwright-core", ...(job === "shorts" ? ["msedge-tts"] : [])];
+const voiced = job === "shorts" || job === "long";
+const base = ["ffmpeg-static", "playwright-core", ...(voiced ? ["msedge-tts"] : [])];
 const missing = base.filter((p) => !has(HERE, p));
 let ffmpeg = null;
 if (!missing.includes("ffmpeg-static")) {
@@ -45,7 +47,7 @@ if (!missing.includes("ffmpeg-static")) {
   // the package installs, then downloads its program; a blocked download leaves the package without it
   if (!ffmpeg || !existsSync(ffmpeg)) missing.push("ffmpeg-static (its program did not download)");
 }
-if (!missing.length) ready.push("the engine (ffmpeg, the browser driver" + (job === "shorts" ? ", the voice" : "") + ")");
+if (!missing.length) ready.push("the engine (ffmpeg, the browser driver" + (voiced ? ", the voice" : "") + ")");
 else install.push({ what: "the engine", why: `missing ${missing.join(", ")}`, command: `npm install --prefix "${HERE}"`, size: "about 90 MB, once" });
 
 // the creator's own Chrome or Edge draws every frame, so no browser is downloaded

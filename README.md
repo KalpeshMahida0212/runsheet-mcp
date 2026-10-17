@@ -14,11 +14,12 @@ no dependencies, Node 20 or newer.
 ## Claude makes your Shorts: the Claude Code plugin
 
 This repository is also a Claude Code plugin marketplace. The `runsheet` plugin wires this server in
-and adds five skills your own Claude runs:
+and adds six skills your own Claude runs:
 
 | Skill | What it does |
 |---|---|
 | `runsheet-shorts` | Makes YouTube Shorts on your computer as motion graphics, in one of five styles, with a voice, music and sound, and schedules them |
+| `runsheet-long` | Makes a long video (16:9, three to ten minutes) from scratch, with chapters, in your style, and schedules it |
 | `runsheet-upload` | Watches a video you made (on your computer), writes its title, description, chapters, tags and thumbnail from what is in it, and schedules it |
 | `runsheet-plan` | Plans your next weeks from your own channel |
 | `runsheet-write` | Writes and saves titles, descriptions, tags, chapters, translations and posts |

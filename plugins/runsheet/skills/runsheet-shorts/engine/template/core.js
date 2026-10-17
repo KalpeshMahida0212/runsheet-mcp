@@ -3,16 +3,29 @@
   springs, a hash for anything that must look random), the page helpers, the icons, the confetti and the rings, the
   word-by-word headline, the scene loop with its transitions, the camera, and the caption pills.
 
+  TWO SHAPES. A Short is 1080 x 1920; a long video ("shape": "16x9", set by render.mjs as window.RS_SHAPE before this
+  file loads) is 1920 x 1080. RS.W, RS.H, RS.SHAPE and RS.SAFE (the area nothing important may leave) tell a style
+  which one it is drawing, and every style lays out both.
+
   A style is a script loaded after this one that sets window.RS_STYLE:
     { name, setup(timeline), ground(parent, kind, mood, seed, scene) -> update(f), brand(layer, kind, scene),
-      scenes: { hook, text, list, checklist, steps, compare, stat, slam, punch, quote, chat, image, strike, end },
+      scenes: { hook, text, list, checklist, steps, compare, stat, slam, punch, quote, chat, image, strike, chapter, end },
       enter(built, f, style) -> true when it drew the arrival itself, captions: { build(layer), update(f) } or null,
       camera: { push, shake }, slamGround }
   Every scene builder is (scene, layer, groundKind) -> update(frame). Times arrive in seconds and run here in frames,
   30 a second, the unit the springs were tuned in. Nothing is random: hash() is.
 */
 (() => {
-  const W = 1080, H = 1920, FPS = 30, CAP_Y = 1368;
+  const SHAPE = window.RS_SHAPE === "16x9" ? "16x9" : "9x16", WIDE = SHAPE === "16x9";
+  const W = WIDE ? 1920 : 1080, H = WIDE ? 1080 : 1920, FPS = 30, CAP_Y = WIDE ? 938 : 1368;
+  /*
+    WHERE NOTHING IMPORTANT MAY GO. A Short: YouTube's title and buttons cover the bottom and the right edge, so text
+    stays inside x 60 to 1020 and y 250 to 1440, and right of x 950 stays clear below y 900. A long video: the player's
+    controls and title cover the edges while it is paused or hovered, so text stays inside a margin of 96 by 64 and above
+    y 980.
+  */
+  const SAFE = WIDE ? { x0: 96, x1: 1824, y0: 64, y1: 980 } : { x0: 60, x1: 1020, y0: 250, y1: 1440, clearRightFromY: 900, clearRightX: 950 };
+  const MID = { x: W / 2, y: WIDE ? H * 0.5 : H * 0.47 };
 
   // ---------------------------------------------------------------- math
 
@@ -125,7 +138,7 @@
    * Instrument Serif italic in the accent colour, a touch larger so the two weigh the same. The size steps down until
    * the words fit in `maxRows` rows.
    */
-  function headline(parent, tokens, { top, size = 112, sizes, width = 920, left = (W - width) / 2, align = "center", color, accent, maxRows = 3, label = "headline", sceneNo, lh = 1.04, sans = SANS, serif = SERIF, weight = "800", emphWeight = "400", emphItalic = true, emphScale = 1.12, tracking = "-0.04em", upper = false, rise = 130 }) {
+  function headline(parent, tokens, { top, size = WIDE ? 104 : 112, sizes, width = WIDE ? 1500 : 920, left = (W - width) / 2, align = "center", color, accent, maxRows = 3, label = "headline", sceneNo, lh = 1.04, sans = SANS, serif = SERIF, weight = "800", emphWeight = "400", emphItalic = true, emphScale = 1.12, tracking = "-0.04em", upper = false, rise = 130 }) {
     const box = h("div", { position: "absolute", left: px(left), top: px(top), width: px(width), textAlign: align }, parent);
     const row = h("div", { display: "flex", flexWrap: "wrap", justifyContent: align === "center" ? "center" : "flex-start", alignItems: "baseline" }, box);
     const words = tokens.map((t) => {
@@ -143,7 +156,16 @@
         });
       }
     };
-    const rowsOf = () => new Set(words.map(({ m }) => Math.round(m.offsetTop / 4))).size;
+    /*
+      ROWS, COUNTED BY WHERE EACH WORD SITS, WITHIN HALF A LINE. The larger serif accent word shares its row's baseline,
+      so its box starts about ten pixels higher than the sans words beside it; counting exact tops made one row two,
+      shrank headlines that fitted, and refused some that fitted outright (found 18 Oct 2026).
+    */
+    const rowsOf = () => {
+      let rows = 0, last = -Infinity;
+      for (const t of words.map(({ m }) => m.offsetTop).sort((a, b) => a - b)) if (t - last > used * 0.5) { rows++; last = t; }
+      return rows;
+    };
     const tries = sizes ?? [size, size * 0.9, size * 0.8, size * 0.72, size * 0.64, size * 0.57, size * 0.5];
     let used = tries[0];
     for (const s of tries) { used = s; fit(s); if (rowsOf() <= maxRows && box.scrollWidth <= width + 2) break; }
@@ -213,7 +235,7 @@
     const gk = s.ground;
     // a slam has no ground of its own: it lands over the scene before it, dimmed
     const g = s.type === "slam" && !S.slamGround ? () => {} : S.ground(root, gk, s.mood, s.no * 13, s);
-    const L = h("div", { position: "absolute", inset: "0", transformOrigin: "540px 900px" }, root);
+    const L = h("div", { position: "absolute", inset: "0", transformOrigin: `${MID.x}px ${MID.y}px` }, root);
     if (S.brand) S.brand(L, gk, s);
     const make = S.scenes[s.type] ?? S.scenes.text;
     const upd = make(s, L, gk);
@@ -235,12 +257,12 @@
       }
       case "flood": {
         const e = ramp(f, 0, 11, SNAP);
-        if (e < 1) st.clipPath = `circle(${e * 1300}px at 540px 900px)`;
+        if (e < 1) st.clipPath = `circle(${e * 1.13 * Math.hypot(W / 2, Math.max(MID.y, H - MID.y))}px at ${MID.x}px ${MID.y}px)`;
         break;
       }
       case "dome": {
         const e = ramp(f, 0, 13, EXPO_OUT);
-        if (e < 1) st.clipPath = `circle(${e * 2700}px at 540px 2400px)`;
+        if (e < 1) st.clipPath = `circle(${e * 1.1 * Math.hypot(W / 2, H * 1.25)}px at ${W / 2}px ${H * 1.25}px)`;
         break;
       }
       case "zoom": {
@@ -281,9 +303,10 @@
   function pillCaptions({ colors, font = SANS, weight = "800", y = CAP_Y, upper = false, radius = 0.34 }) {
     const caps = [];
     const build = (layer) => {
-    const PAD = 0.2, CAP_W = 880, CAP_MAX = 76;
+    // a Short's line keeps clear of the buttons on the right; a long video's is centered, smaller, like subtitles
+    const PAD = 0.2, CAP_W = WIDE ? 1300 : 880, CAP_MAX = WIDE ? 60 : 76, BOX_W = WIDE ? W : 1010;
     for (const c of T.captions) {
-      const el = h("div", { position: "absolute", left: "0", top: px(y - 70), width: "1010px", height: "140px", display: "none", alignItems: "center", justifyContent: "center" }, layer);
+      const el = h("div", { position: "absolute", left: "0", top: px(y - 70), width: px(BOX_W), height: "140px", display: "none", alignItems: "center", justifyContent: "center" }, layer);
       const em = c.words.reduce((s, w) => s + wordEm(w.t) + 2 * PAD, 0) + (c.words.length - 1) * 0.02;
       const size = Math.min(CAP_MAX, CAP_W / em);
       const inner = h("div", { display: "flex", gap: px(size * 0.02), alignItems: "center" }, el);
@@ -314,7 +337,7 @@
   // ---------------------------------------------------------------- load and seek
 
   let S = null;
-  window.RS = { W, H, FPS, clamp01, lerp, hash, noise1, bezier, EXPO_OUT, EXPO_IN, SNAP, SOFT, ramp, spr, POP, SETTLE, SLAM,
+  window.RS = { W, H, SHAPE, WIDE, SAFE, FPS, clamp01, lerp, hash, noise1, bezier, EXPO_OUT, EXPO_IN, SNAP, SOFT, ramp, spr, POP, SETTLE, SLAM,
     h, px, rgba, popTo, typedN, icon, sunburst, headline, burst, ring, pillCaptions, problems, SANS, SERIF, MONO, fr, CAP_Y };
 
   window.load = async (timeline) => {

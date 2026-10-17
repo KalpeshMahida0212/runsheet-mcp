@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { align } from "./lib/align.mjs";
 import { windows, appendWindow, tidy, group } from "./lib/words.mjs";
-import { readScenes, plan, themeOf } from "./lib/scenes.mjs";
+import { readScenes, plan, themeOf, chaptersOf } from "./lib/scenes.mjs";
 import { parseReport } from "./lib/ff.mjs";
 
 // a corrected name and a web address that was heard as six words do not pull the words after them out of step
@@ -128,4 +128,21 @@ import { parseReport } from "./lib/ff.mjs";
   assert.throws(() => parseReport(["  Duration: N/A", "  Stream #0:0: Audio: mp3"].join("\n")));
 }
 
-console.log("ok: align, group, tidy, appendWindow, windows, readScenes, plan, themeOf, parseReport");
+// a long video's chapters: YouTube's format, a short opening folded into the first chapter, and the rules checked
+{
+  const sc = (start, type, text) => ({ start, type, text });
+  assert.deepEqual(chaptersOf([sc(0, "hook", "h"), sc(4, "chapter", "The plan"), sc(19, "chapter", "The week"), sc(40, "chapter", "Keep *it* going")], 54),
+    { lines: ["0:00 The plan", "0:19 The week", "0:40 Keep it going"], problem: null });
+  assert.deepEqual(chaptersOf([sc(0, "hook", "h"), sc(25, "chapter", "A"), sc(80, "chapter", "B"), sc(3700, "chapter", "C")], 3800).lines,
+    ["0:00 Intro", "0:25 A", "1:20 B", "1:01:40 C"]);
+  assert.match(chaptersOf([sc(0, "hook", "h"), sc(30, "chapter", "A")], 60).problem, /at least 3/);
+  assert.match(chaptersOf([sc(0, "hook", "h"), sc(12, "chapter", "A"), sc(30, "chapter", "B"), sc(36, "chapter", "C")], 90).problem, /shorter than ten seconds/);
+  assert.deepEqual(chaptersOf([sc(0, "hook", "h")], 60), { lines: [], problem: null });
+  // a Short has no chapters, and a long video takes many more scenes than a Short
+  const twenty = Array.from({ length: 20 }, (_, i) => ({ type: i ? "text" : "hook", say: "A line.", text: "A line" }));
+  assert.ok(readScenes({ scenes: twenty }, (p) => p).errors.some((e) => /2 to 14 scenes/.test(e)));
+  assert.deepEqual(readScenes({ scenes: twenty }, (p) => p, { long: true }).errors, []);
+  assert.ok(readScenes({ scenes: [twenty[0], { type: "chapter", say: "Part one.", text: "Part one" }] }, (p) => p).errors.some((e) => /chapter scenes are for long videos/.test(e)));
+}
+
+console.log("ok: align, group, tidy, appendWindow, windows, readScenes, plan, themeOf, parseReport, chaptersOf");

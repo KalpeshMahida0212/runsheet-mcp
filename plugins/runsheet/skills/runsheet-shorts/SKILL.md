@@ -11,7 +11,7 @@ required tool or file is missing. Your own model writes every word; nothing here
 ## Before the first run (check, fix, carry on)
 
 1. **Runsheet's tools.** You need `runsheet_get_channel`, `runsheet_get_library`, `runsheet_get_schedule`
-   and `runsheet_get_watchlist` (Runsheet's connector), and `runsheet_start_short` and
+   and `runsheet_get_watchlist` (Runsheet's connector), and `runsheet_start_video` and
    `runsheet_upload_video` (Runsheet's local server, `npx -y runsheet-mcp`, with a `RUNSHEET_API_KEY`
    that has "Upload from this machine" ticked; keys are made in Runsheet, Settings, API keys). If they
    are missing, say exactly that and stop.
@@ -44,12 +44,12 @@ required tool or file is missing. Your own model writes every word; nothing here
 | `pop` | Bright and playful: sticker cards with thick outlines, bouncy type, doodles and marker highlights | Paid |
 | `editorial` | A calm magazine page: big serif type set line by line, hairlines, numerals and whitespace | Paid |
 
-Every video, script or clip, needs its own pass from `runsheet_start_short`. A free Runsheet account
+Every video, script or clip, needs its own pass from `runsheet_start_video` (`kind: "short"`). A free Runsheet account
 makes one Short, ever, in `studio`. A paid plan makes its monthly number of Shorts in every style. A
 pass is good for two hours and six renders of that one video, which is room to check and fix it.
 
 - One pass is one video. Never render a second video on a pass.
-- If `runsheet_start_short` refuses, stop making videos. Tell the creator its words exactly, and what
+- If `runsheet_start_video` refuses, stop making videos. Tell the creator its words exactly, and what
   was made before it.
 - Never change the engine, its files or the pass check to get around a refusal. The paid styles come
   from Runsheet with the pass and are not in the engine.
@@ -118,7 +118,7 @@ instead of `ls`, `which` or `cat`. The Write tool makes any folder it needs.
    - **Tags:** 5 to 10, the core phrase and its close variants.
    - **Different every time:** no two Shorts in a batch share a title pattern or an opening line.
 6. **Render.**
-   - **The pass:** call `runsheet_start_short` with the `style`, once for this video. If it refuses,
+   - **The pass:** call `runsheet_start_video` with `kind: "short"` and the `style`, once for this video. If it refuses,
      stop here (see the styles above).
    - Write `short.json` into a new folder `<folder>/<YYYY-MM-DD> <short-slug>/`: `title`, `brand`
      (`name`, `handle`, `logo`), `theme`, `accent`, `voice`, `rate` and `music` from the settings,

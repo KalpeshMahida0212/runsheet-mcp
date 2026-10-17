@@ -28,7 +28,7 @@ and is missing, and installs just that:
 
 | Job | Installs once |
 |---|---|
-| A Short from a script | the engine: ffmpeg, the browser driver and the voice, about 90 MB |
+| A Short or a long video from a script | the engine: ffmpeg, the browser driver and the voice, about 90 MB |
 | Shorts cut from a long video | the engine, plus the speech part: about 470 MB, and its model on the first listen, about 290 MB |
 | Watching a finished video to write its copy | the engine, plus the speech part only when the video has a sound track |
 
@@ -85,6 +85,20 @@ lights each caption word as it is said, checks the frames and schedules them lik
 It needs the speech part, once, which `node engine/preflight.mjs clips` asks for: about 470 MB, and the
 speech model downloads on the first run (about 290 MB). In testing, 7.5 minutes of video took about a
 minute to hear, and each clip about 90 seconds to render.
+
+## Long videos, made from scratch
+
+Ask for a long video ("Make a five minute video on how I plan my week") and the `runsheet-long` skill picks the
+topic from your channel, writes the script in chapters, renders it in your style at 1920x1080 with a voice, music
+and sound effects, writes the title, the description with its chapters, the tags and the thumbnail, and schedules
+it. The chapters come from the video's own chapter cards, at their exact times, and `captions.srt` is written for
+YouTube's subtitles. Three to ten minutes; a five minute video takes about ten minutes to render.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `longMinutes` | 5 | How long each long video runs, 3 to 10 |
+| `longTime` | `15:00` | The time of day each one goes public, in `timeZone` |
+| `longPerWeek` | 1 | How many a weekly run makes |
 
 ## Videos you made yourself
 
@@ -152,7 +166,7 @@ node render.mjs path/to/short.json
 ```
 
 The format of `short.json` is in `SCENES.md` and at the top of `engine/render.mjs`. Every render needs the
-video's `pass` from `runsheet_start_short` (`engine/lib/pass.mjs`). It writes
+video's `pass` from `runsheet_start_video` (`engine/lib/pass.mjs`). It writes
 `short.mp4` (1080x1920, 30 fps, -14 LUFS), `cover.png` and `sheet.png`, and prints a JSON summary.
 Everything in the picture and the sound is made in code: the fonts (Inter Tight, Instrument Serif,
 JetBrains Mono, Instrument Sans, and each paid style's own) and the icons (Lucide) are open-licensed, and

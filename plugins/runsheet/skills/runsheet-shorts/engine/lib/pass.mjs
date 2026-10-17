@@ -1,5 +1,5 @@
 /*
-  EVERY VIDEO HAS A PASS, from Runsheet's runsheet_start_short: one video on a free account, the plan's monthly
+  EVERY VIDEO HAS A PASS, from Runsheet's runsheet_start_video: one video on a free account, the plan's monthly
   number on a paid one. A pass is good for two hours and six renders while the video is fixed. It is also what
   fetches a paid style, which lives on Runsheet and not in this repository. No pass, no video.
 */
@@ -39,7 +39,7 @@ function call(method, path, body) {
 
 /** One render on the pass. Resolves Runsheet's answer (a paid style's files come with it); throws with its reason. */
 export async function usePass(pass, style) {
-  if (!pass) throw new Error(`this video has no pass. Ask Runsheet for one with runsheet_start_short (style "${style}") and put it in the spec as "pass".`);
+  if (!pass) throw new Error(`this video has no pass. Ask Runsheet for one with runsheet_start_video (style "${style}") and put it in the spec as "pass".`);
   let r;
   try {
     r = await call("GET", `/api/v1/shorts/pass?id=${encodeURIComponent(pass)}&style=${encodeURIComponent(style)}`);
