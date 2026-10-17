@@ -1,8 +1,10 @@
 # runsheet-shorts
 
 Claude makes YouTube Shorts for your channel and schedules them with Runsheet. It reads your channel,
-writes each script, renders the Short on your computer (a voice, captions lit word by word as they
-are spoken, your colors or your own clips), checks the frames and schedules it into your open days.
+writes each script as scenes and renders the Short on your computer as motion graphics: a voice,
+captions lit word by word, headlines that rise as they are said, cards, checklists, numbers and slams
+that land on their words, scenes that slide, flood and open in, music made for the video and a sound
+for every move. Then it checks the frames and schedules it into your open days.
 It also cuts Shorts out of your own long videos, with captions that follow what you say.
 Your Claude does all the writing. Runsheet supplies your channel's data, uploads and schedules.
 
@@ -32,12 +34,15 @@ It needs Node 20 or newer and Chrome or Edge. The first run installs the engine'
 | `perWeek` | 7 | How many Shorts a run schedules (one a day at most) |
 | `time` | `10:00` | The time of day each one goes public, in `timeZone` |
 | `timeZone` | yours | An IANA zone, such as `America/New_York` |
-| `theme` | `dark` | `dark` or `light` |
-| `accent` | `#ff4d2e` | The highlight color |
+| `theme` | `light` | `light` (cream) or `dark` (ink): the usual ground |
+| `accent` | `#ff4a36` | Your brand color; every other color is worked out from it |
 | `voice` | `en-US-EmmaMultilingualNeural` | Any Microsoft Edge neural voice |
+| `rate` | `+8%` | How fast the voice speaks |
+| `music` | `auto` | `auto` (music made for each Short), `none`, or the path of your own track |
+| `logo` | none | Your square logo, for the top of each scene and the end card |
 | `folder` | `~/Videos/Runsheet Shorts` | Where each Short and its files are kept |
 | `topics` | from the channel | What the channel is about, one line. Used when the library is too small |
-| `clips` | none | A folder of your own vertical clips or pictures to use behind the words |
+| `clips` | none | A folder of your own pictures or clips to show in picture scenes |
 | `longVideos` | none | A folder of your own long videos; each run cuts Shorts from the newest one not cut yet |
 
 ## Shorts from your long videos
@@ -101,8 +106,11 @@ cd engine && npm install
 node render.mjs path/to/short.json
 ```
 
-The format of `short.json` is at the top of `engine/render.mjs`. It writes `short.mp4` (1080x1920,
-30 fps, -14 LUFS), `cover.png` and `sheet.png`, and prints a JSON summary.
+The format of `short.json` is in `SCENES.md` and at the top of `engine/render.mjs`. It writes
+`short.mp4` (1080x1920, 30 fps, -14 LUFS), `cover.png` and `sheet.png`, and prints a JSON summary.
+Everything in the picture and the sound is made in code: the fonts (Inter Tight, Instrument Serif,
+JetBrains Mono) and the icons (Lucide) are open-licensed, and the music and effects are synthesized,
+so a Short can be published anywhere.
 
 For clips from a long video (after `npm install --prefix engine/stt`):
 

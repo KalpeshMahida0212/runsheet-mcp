@@ -1,206 +1,161 @@
 #!/usr/bin/env node
 /*
-  Renders one YouTube Short from a script, on the creator's own computer.
+  Renders one YouTube Short as motion graphics, on the creator's own computer.
 
     node render.mjs short.json
 
-  short.json:
+  short.json (the scene types and their fields are in ../SCENES.md):
     {
-      "out": "C:/Users/me/Videos/shorts/2026-10-20 one-sentence-month",   folder for everything it writes
-      "title": "Plan a month of YouTube in one sentence",                   the video's title (the cover uses the hook)
-      "brand": { "name": "Runsheet", "handle": "@runsheet" },              the pill at the top and the end card
-      "theme": "dark",                                                      dark or light
-      "accent": "#ff4d2e",                                                  the highlight colour
-      "voice": "en-US-EmmaMultilingualNeural",                              any Edge neural voice
-      "rate": "+4%",                                                        optional speaking rate
-      "lines": [                                                            3 to 14 lines, the first is the hook
-        "Your channel posts when you *remember*.",
-        { "say": "Twenty videos, one week.", "show": "20 videos, *one week*.", "image": "C:/path/screen.png" }
-      ],
-      "end": { "title": "Runsheet", "sub": "Free plan, no card" },          the last card
-      "background": { "type": "plain" },                                    plain, image (path) or video (path, muted)
-      "music": { "path": "C:/path/bed.mp3", "volume": 0.12 }                optional, under the voice
+      "out": "C:/Users/me/Videos/shorts/2026-10-20 three-rules",   folder for everything it writes
+      "title": "Three rules for a shared login",                     the video's title
+      "brand": { "name": "Coauth", "handle": "@coauth", "logo": "C:/path/logo.png" },   logo optional
+      "theme": "light",                                              light or dark: the usual ground
+      "accent": "#d6a85f",                                           the brand colour
+      "voice": "en-US-AndrewNeural", "rate": "+6%",                  any Edge neural voice, optional rate
+      "music": "auto",                                               auto (the made-up bed), none, or { "path", "volume" }
+      "scenes": [
+        { "type": "hook", "say": "Sharing one login with your team? Three rules.", "text": "One login, three *rules*", "kicker": "team passwords" },
+        { "type": "list", "say": "...", "text": "The *rules*", "items": ["Never paste it in chat", "..."] },
+        { "type": "end", "say": "Coauth. Free on the Chrome Web Store.", "sub": "chrome web store", "stamp": "Free for 3" }
+      ]
     }
 
-  Writes short.mp4 (1080x1920, 30 fps, H.264 and AAC, loudness about -14 LUFS), cover.png (a frame at
-  the end of the hook, for the thumbnail), sheet.png (each line fully on screen and the end card, tiled, to
-  check by eye) and
-  timeline.json, then prints a JSON summary on stdout.
+  Every scene's length is its line's: the voice is spoken first, every word timed, and each thing on screen arrives
+  on the word that names it. Writes short.mp4 (1080x1920, 30 fps, H.264 and AAC, -14 LUFS), cover.png, sheet.png
+  (every scene once it has settled, tiled, to check by eye) and timeline.json, then prints a JSON summary.
 */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve, isAbsolute } from "node:path";
+import { cpus } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright-core";
 import { ff, duration } from "./lib/ff.mjs";
 import { findBrowser } from "./lib/browser.mjs";
 import { speak } from "./lib/voice.mjs";
+import { readScenes, themeOf, plan } from "./lib/scenes.mjs";
+import { mixSound } from "./lib/sound.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FPS = 30, W = 1080, H = 1920;
-const LEAD = 0.35, GAP = 0.22, END = 1.9;
-
-const THEMES = {
-  dark: { bg: "#0b0b10", fg: "#f6f5f2", muted: "#b9b8c3", pill: "rgba(255,255,255,.07)", line: "rgba(255,255,255,.14)" },
-  light: { bg: "#f6f5f2", fg: "#111114", muted: "#55545f", pill: "rgba(0,0,0,.05)", line: "rgba(0,0,0,.12)" },
-};
 
 function fail(msg) { process.stderr.write(`render: ${msg}\n`); process.exit(1); }
+const say = (msg) => process.stderr.write(`render: ${msg}\n`);
 
 function readSpec(path) {
   const base = dirname(resolve(path));
   const s = JSON.parse(readFileSync(path, "utf8"));
   const abs = (p) => (p ? (isAbsolute(p) ? p : resolve(base, p)) : p);
-  if (!Array.isArray(s.lines) || s.lines.length < 2 || s.lines.length > 14) fail("lines must be 2 to 14 entries; the first is the hook.");
-  const lines = s.lines.map((l, i) => {
-    const o = typeof l === "string" ? { show: l } : { ...l };
-    o.show = String(o.show ?? o.say ?? "").trim();
-    o.say = String(o.say ?? o.show).replace(/\*/g, "").trim();
-    if (!o.show || !o.say) fail(`line ${i + 1} is empty.`);
-    if (o.show.length > 160) fail(`line ${i + 1} is ${o.show.length} characters; keep each line under 160 so it fits on screen.`);
-    if (o.image) { o.image = abs(o.image); if (!existsSync(o.image)) fail(`line ${i + 1}: image not found: ${o.image}`); }
-    return o;
-  });
-  const bg = s.background && s.background.type !== "plain" ? { type: s.background.type, path: abs(s.background.path) } : { type: "plain" };
-  if (bg.type !== "plain" && !existsSync(bg.path || "")) fail(`background not found: ${bg.path}`);
-  const music = s.music && s.music.path ? { path: abs(s.music.path), volume: Number(s.music.volume ?? 0.12) } : null;
-  if (music && !existsSync(music.path)) fail(`music not found: ${music.path}`);
-  const out = abs(s.out || join(base, "short-out"));
+  const { scenes, errors } = readScenes(s, abs);
+  if (errors.length) fail(errors.join("\n         "));
+  for (const sc of scenes) if (sc.type === "image" && !existsSync(sc.src)) fail(`scene ${scenes.indexOf(sc) + 1}: no file at ${sc.src}`);
+  const logo = s.brand?.logo ? abs(s.brand.logo) : null;
+  if (logo && !existsSync(logo)) fail(`brand logo not found: ${logo}`);
+  const music = s.music === "none" ? "none" : s.music?.path ? { path: abs(s.music.path), volume: Number(s.music.volume ?? 0.5) } : "auto";
+  if (music.path && !existsSync(music.path)) fail(`music not found: ${music.path}`);
   return {
-    out, lines, bg, music,
-    title: String(s.title || lines[0].say),
-    brand: { name: String(s.brand?.name || "My channel"), handle: s.brand?.handle ? String(s.brand.handle) : "" },
-    theme: THEMES[s.theme === "light" ? "light" : "dark"],
-    accent: /^#[0-9a-f]{6}$/i.test(s.accent || "") ? s.accent : "#ff4d2e",
+    out: abs(s.out || join(base, "short-out")), scenes, music,
+    title: String(s.title || scenes[0].say || ""),
+    brand: { name: String(s.brand?.name || "My channel"), handle: s.brand?.handle ? String(s.brand.handle) : "", logo },
+    theme: s.theme === "dark" ? "dark" : "light",
+    accent: /^#[0-9a-f]{6}$/i.test(s.accent || "") ? s.accent : "#ff4a36",
     voice: String(s.voice || "en-US-EmmaMultilingualNeural"),
     rate: s.rate ? String(s.rate) : null,
-    end: { title: String(s.end?.title || s.brand?.name || ""), sub: s.end?.sub ? String(s.end.sub) : s.brand?.handle ? `Follow ${s.brand.handle}` : "" },
   };
 }
 
-/** A second colour for the soft glow behind the words: the accent with its hue turned 150 degrees, a little darker. */
-function accent2(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  let [r, g, b] = [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
-  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
-  let h = 0, s = 0;
-  if (d) {
-    s = d / (1 - Math.abs(2 * l - 1));
-    h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  }
-  h = (h * 60 + 150 + 360) % 360;
-  return `hsl(${Math.round(h)} ${Math.round(Math.min(1, s) * 80)}% ${Math.round(Math.min(0.5, l) * 90)}%)`;
+async function openPage(browser, timeline) {
+  const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+  await page.goto(pathToFileURL(join(HERE, "template", "motion.html")).href);
+  await page.evaluate((tl) => window.load(tl), timeline);
+  await page.waitForFunction(() => window.ready === true, null, { timeout: 60000 });
+  return page;
 }
 
 async function main() {
   const specPath = process.argv[2];
   if (!specPath) fail("usage: node render.mjs short.json");
   const S = readSpec(specPath);
+  const t0 = Date.now();
   mkdirSync(S.out, { recursive: true });
   const work = join(S.out, "work");
-  mkdirSync(work, { recursive: true });
-  const t0 = Date.now();
+  const framesDir = join(work, "frames");
+  rmSync(framesDir, { recursive: true, force: true });
+  mkdirSync(framesDir, { recursive: true });
 
-  // 1. the voice, one clip per line, with word timings
-  const clips = await speak(S.lines, { voice: S.voice, rate: S.rate, dir: work });
+  // 1. the voice: one clip a scene, every word timed
+  const spoken = S.scenes.map((sc, i) => (sc.say ? i : -1)).filter((i) => i >= 0);
+  const said = await speak(spoken.map((i) => ({ show: S.scenes[i].say, say: S.scenes[i].say })), { voice: S.voice, rate: S.rate, dir: work });
+  const clips = S.scenes.map(() => null);
+  spoken.forEach((i, k) => { clips[i] = said[k]; });
 
-  // 2. the timeline, every time in seconds from the start
-  let t = LEAD;
-  const lines = S.lines.map((l, i) => {
-    const c = clips[i];
-    const line = {
-      start: t, end: t + c.duration, hook: i === 0,
-      image: l.image ? pathToFileURL(l.image).href : null,
-      words: c.words.map((w) => ({ text: w.text, emph: w.emph, t0: t + w.t0, t1: t + w.t1 })),
-    };
-    t = line.end + GAP;
-    return line;
-  });
-  const endStart = t + 0.05;
-  const total = endStart + END;
+  // 2. the plan: every scene's start and length, every cue, the captions, the camera's hits
+  const P = plan(S.scenes, clips, { theme: S.theme });
+  const url = (p) => (p ? pathToFileURL(p).href : null);
   const timeline = {
-    w: W, h: H, fps: FPS, duration: total,
-    theme: { ...S.theme, accent: S.accent, accent2: accent2(S.accent) },
-    brand: S.brand,
-    background: S.bg.type === "plain" ? { type: "plain" } : { type: S.bg.type, src: pathToFileURL(S.bg.path).href },
-    lines,
-    end: { start: endStart, title: S.end.title, sub: S.end.sub },
+    w: W, h: H, fps: FPS, duration: P.total,
+    theme: themeOf(S.accent),
+    brand: { name: S.brand.name, handle: S.brand.handle, logo: url(S.brand.logo) },
+    scenes: P.scenes.map((s) => (s.type === "image" ? { ...s, src: url(s.src) } : s)),
+    captions: P.captions, hits: P.hits,
   };
   writeFileSync(join(S.out, "timeline.json"), JSON.stringify(timeline, null, 1));
 
-  // 3. the sound: every line at its start and the music under it if given, then loudness to -14 LUFS in two passes,
-  //    measured and then applied as one gain (a single pass undershoots speech with pauses in it by a decibel or more)
-  const premix = join(work, "premix.wav");
-  const inputs = clips.flatMap((c) => ["-i", c.file]);
-  const delays = clips.map((c, i) => `[${i}:a]adelay=${Math.round(lines[i].start * 1000)}:all=1[a${i}]`).join(";");
-  let graph = `${delays};${clips.map((_, i) => `[a${i}]`).join("")}amix=inputs=${clips.length}:normalize=0,apad,atrim=0:${total.toFixed(3)}[v]`;
-  if (S.music) {
-    inputs.push("-stream_loop", "-1", "-i", S.music.path);
-    graph += `;[${clips.length}:a]volume=${S.music.volume},atrim=0:${total.toFixed(3)},afade=t=out:st=${Math.max(0, total - 1.2).toFixed(2)}:d=1.2[m]` +
-      ";[v][m]amix=inputs=2:normalize=0:duration=first[o]";
-  }
-  await ff([...inputs, "-filter_complex", graph, "-map", S.music ? "[o]" : "[v]", "-ar", "48000", "-ac", "2", premix]);
-  const LOUD = "loudnorm=I=-14:TP=-1.5:LRA=11";
-  const m = JSON.parse((await ff(["-i", premix, "-af", `${LOUD}:print_format=json`, "-f", "null", "-"])).match(/\{[^{}]*"input_i"[^{}]*\}/)[0]);
-  const soundtrack = join(work, "soundtrack.wav");
-  await ff(["-i", premix, "-af",
-    `${LOUD}:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`,
-    "-ar", "48000", "-ac", "2", soundtrack]);
-
-  // 4. the frames: the scene in the creator's own browser, one picture per frame, straight into ffmpeg
+  // 3. the layout, checked before a single frame is drawn
   const browser = await chromium.launch({ executablePath: findBrowser(), args: ["--allow-file-access-from-files", "--autoplay-policy=no-user-gesture-required", "--hide-scrollbars"] });
-  const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
-  await page.goto(pathToFileURL(join(HERE, "template", "short.html")).href);
-  await page.evaluate((tl) => window.load(tl), timeline);
-  await page.waitForFunction(() => window.ready === true, null, { timeout: 30000 });
-  const long = (await page.evaluate(() => window.rows)).map((n, i) => (n > 3 ? `line ${i + 1} takes ${n} rows on screen` : null)).filter(Boolean);
-  if (long.length) {
-    await browser.close();
-    fail(`${long.join("; ")}. Three rows at most: split the line in two, or shorten it.`);
-  }
+  const first = await openPage(browser, timeline);
+  const problems = await first.evaluate(() => window.problems);
+  if (problems.length) { await browser.close(); fail(problems.join("\n         ")); }
 
-  const video = join(S.out, "short.mp4");
-  const frames = Math.ceil(total * FPS);
-  let written = 0;
-  await ff([
-    "-f", "image2pipe", "-framerate", String(FPS), "-c:v", "mjpeg", "-i", "-",
-    "-i", soundtrack,
-    "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-r", String(FPS),
-    "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", video,
-  ], {
-    input: async (stdin) => {
-      for (let f = 0; f < frames; f++) {
-        await page.evaluate((x) => window.seek(x), f / FPS);
-        const jpg = await page.screenshot({ type: "jpeg", quality: 92 });
-        if (!stdin.write(jpg)) await new Promise((ok) => stdin.once("drain", ok));
-        written++;
-        if (f % 150 === 0) process.stderr.write(`render: frame ${f} of ${frames}\n`);
-      }
-      stdin.end();
-    },
-  });
+  // 4. the sound: the voice, the score and the hits, at -14 LUFS
+  say("mixing the sound");
+  const mix = join(work, "mix.wav");
+  mixSound({ plan: P, voices: P.scenes.filter((s, i) => clips[i]).map((s) => ({ file: clips[s.no - 1].file, at: s.start + s.voiceAt })), music: S.music, out: mix, work });
 
-  // 5. the cover: the hook, fully on screen
-  const hook = lines[0];
-  await page.evaluate((x) => window.seek(x), Math.min(hook.end - 0.05, hook.words[hook.words.length - 1].t1 + 0.25));
+  // 5. the frames, on a few tabs at once
+  const frames = Math.ceil(P.total * FPS);
+  const tabs = Math.max(1, Math.min(4, cpus().length - 2));
+  const pages = [first];
+  for (let k = 1; k < tabs; k++) pages.push(await openPage(browser, timeline));
+  let done = 0;
+  await Promise.all(pages.map(async (page, k) => {
+    const a = Math.floor((k * frames) / tabs), b = Math.floor(((k + 1) * frames) / tabs);
+    for (let f = a; f < b; f++) {
+      await page.evaluate((x) => window.seek(x), f / FPS);
+      await page.screenshot({ path: join(framesDir, `f-${String(f).padStart(5, "0")}.jpg`), type: "jpeg", quality: 92 });
+      if (++done % 150 === 0) say(`frame ${done} of ${frames}`);
+    }
+  }));
+
+  // 6. the cover (the hook, settled) and every scene once it has settled, to check by eye
+  const hook = P.scenes[0];
+  await first.evaluate((x) => window.seek(x), hook.start + hook.settle);
   const cover = join(S.out, "cover.png");
-  await page.screenshot({ path: cover, type: "png" });
-
-  // 6. every line fully on screen, then the end card, tiled, so each can be checked by eye before it goes anywhere
-  const moments = [...lines.map((l) => l.end - 0.02), endStart + 1];
-  for (const f of readdirSync(work)) if (/^sheet-\d+\.jpg$/.test(f)) rmSync(join(work, f)); // an earlier, longer render's frames
-  for (const [i, m] of moments.entries()) {
-    await page.evaluate((x) => window.seek(x), m);
-    await page.screenshot({ path: join(work, `sheet-${String(i).padStart(2, "0")}.jpg`), type: "jpeg", quality: 90 });
+  await first.screenshot({ path: cover, type: "png" });
+  for (const f of readdirSync(work)) if (/^sheet-\d+\.jpg$/.test(f)) rmSync(join(work, f));
+  for (const [i, s] of P.scenes.entries()) {
+    await first.evaluate((x) => window.seek(x), s.start + s.settle);
+    await first.screenshot({ path: join(work, `sheet-${String(i).padStart(2, "0")}.jpg`), type: "jpeg", quality: 90 });
   }
   await browser.close();
   const sheet = join(S.out, "sheet.png");
-  const cols = Math.ceil(moments.length / 2);
-  await ff(["-i", join(work, "sheet-%02d.jpg"), "-vf", `scale=270:480,tile=${cols}x2:padding=6:color=0x222222`, "-frames:v", "1", sheet]);
+  const n = P.scenes.length, cols = n <= 4 ? n : Math.ceil(n / 2);
+  await ff(["-i", join(work, "sheet-%02d.jpg"), "-vf", `scale=270:480,tile=${cols}x${Math.ceil(n / cols)}:padding=6:color=0x222222`, "-frames:v", "1", sheet]);
+
+  // 7. the video: the frames and the mix, BT.709 in TV range like every upload YouTube expects
+  const video = join(S.out, "short.mp4");
+  say("encoding");
+  await ff([
+    "-framerate", String(FPS), "-i", join(framesDir, "f-%05d.jpg"), "-i", mix,
+    "-vf", "scale=in_range=pc:out_range=tv:in_color_matrix=bt601:out_color_matrix=bt709,format=yuv420p",
+    "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-r", String(FPS), "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
+    "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", video,
+  ]);
+  rmSync(framesDir, { recursive: true, force: true });
 
   const len = await duration(video);
   process.stdout.write(JSON.stringify({
-    ok: true, video, cover, sheet, seconds: Number(len.toFixed(2)), frames: written,
-    lines: lines.map((l, i) => ({ text: S.lines[i].show, start: Number(l.start.toFixed(2)), end: Number(l.end.toFixed(2)) })),
+    ok: true, video, cover, sheet, seconds: Number(len.toFixed(2)), frames,
+    scenes: P.scenes.map((s) => ({ type: s.type, start: Number(s.start.toFixed(2)), seconds: Number(s.len.toFixed(2)), say: s.say })),
     renderSeconds: Math.round((Date.now() - t0) / 1000),
   }, null, 2) + "\n");
 }

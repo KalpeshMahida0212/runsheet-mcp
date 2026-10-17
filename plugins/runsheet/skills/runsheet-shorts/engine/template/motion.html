@@ -1,0 +1,32 @@
+<!doctype html>
+<!--
+  One Short as motion graphics, drawn as a function of time. render.mjs calls load(timeline) once and seek(t) for
+  every frame, then takes a picture. Nothing animates by itself: no CSS transitions, no timers, no randomness, so
+  frame 412 is the same picture every time it is rendered. The scenes, the grounds and the captions are in motion.js.
+-->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: "Inter Tight"; src: url("../fonts/InterTight.woff2") format("woff2"); font-weight: 600 900; }
+  @font-face { font-family: "Instrument Serif"; src: url("../fonts/InstrumentSerif-Italic.woff2") format("woff2"); font-style: italic; font-weight: 400; }
+  @font-face { font-family: "JetBrains Mono"; src: url("../fonts/JetBrainsMono.woff2") format("woff2"); font-weight: 500 700; }
+  html, body { margin: 0; padding: 0; width: 1080px; height: 1920px; overflow: hidden; background: #f8f6f3; }
+  body { font-family: "Inter Tight", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  #cam { position: absolute; inset: 0; transform-origin: 540px 960px; }
+  .scene { position: absolute; inset: 0; overflow: hidden; display: none; isolation: isolate; }
+  .fill { position: absolute; inset: 0; }
+  .abs { position: absolute; }
+  .mask { display: inline-block; clip-path: inset(-0.14em -0.32em -0.26em -0.14em); }
+  .word { display: inline-block; line-height: 1; transform-origin: 0% 100%; }
+  .row { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; }
+  #caps { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="cam"></div><div id="caps"></div></div>
+<script src="icons.js"></script>
+<script src="motion.js"></script>
+</body>
+</html>

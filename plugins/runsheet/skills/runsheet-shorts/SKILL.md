@@ -1,6 +1,6 @@
 ---
 name: runsheet-shorts
-description: "Makes YouTube Shorts for the creator's channel and schedules them through Runsheet, start to finish with no questions. Reads the channel, picks topics, writes each script, renders each Short on this computer with a voice and synced captions, checks the frames, and schedules it into the next open days. It also cuts Shorts out of the creator's own long videos, with captions that follow the speech. Use when the user asks to make Shorts, fill the week or month with videos, automate their channel's Shorts, cut Shorts or clips from a long video, podcast or stream, or run the weekly Shorts job."
+description: "Makes YouTube Shorts for the creator's channel and schedules them through Runsheet, start to finish with no questions. Reads the channel, picks topics, writes each script as scenes, and renders each Short on this computer as motion graphics: a voice, captions lit word by word, scenes that slide and flood in, cards and numbers that land on their words, music and sound effects. Checks the frames and schedules it into the next open days. It also cuts Shorts out of the creator's own long videos, with captions that follow the speech. Use when the user asks to make Shorts, fill the week or month with videos, automate their channel's Shorts, cut Shorts or clips from a long video, podcast or stream, or run the weekly Shorts job."
 ---
 
 # Runsheet Shorts: from the channel to a scheduled Short, by itself
@@ -19,11 +19,13 @@ required tool or file is missing. Your own model writes every word; nothing here
    that it needs nothing.
 3. **Settings.** Read `~/.runsheet-shorts.json` if it exists. If not, create it from the channel, with
    these defaults, and tell the creator once that it is there:
-   `{ "perWeek": 7, "time": "10:00", "timeZone": "<the creator's IANA zone>", "theme": "dark",
-   "accent": "#ff4d2e", "voice": "en-US-EmmaMultilingualNeural", "folder": "~/Videos/Runsheet Shorts",
-   "brand": "<channel name>", "handle": "<@handle if known>", "topics": "<what the channel is about, one line>", "clips": null,
-   "longVideos": null }`.
-   `clips` may name a folder of the creator's own vertical clips or images to use as backgrounds.
+   `{ "perWeek": 7, "time": "10:00", "timeZone": "<the creator's IANA zone>", "theme": "light",
+   "accent": "#ff4a36", "voice": "en-US-EmmaMultilingualNeural", "rate": "+8%", "music": "auto",
+   "folder": "~/Videos/Runsheet Shorts", "brand": "<channel name>", "handle": "<@handle if known>",
+   "logo": null, "topics": "<what the channel is about, one line>", "clips": null, "longVideos": null }`.
+   `accent` is the channel's colour if its branding has one. `logo` may name the channel's square logo
+   file. `music` is `auto` (music made for each Short), `none`, or the path of the creator's own track.
+   `clips` may name a folder of the creator's own pictures or clips to show in `image` scenes.
    `topics` is what the channel is about, in one line. Fill it from the channel's own description
    and titles. `longVideos` may name a folder of the creator's own long videos to cut Shorts from.
 
@@ -58,10 +60,18 @@ instead of `ls`, `which` or `cat`. The Write tool makes any folder it needs.
    - Vary the shape across the batch: a tip, a mistake, a quick how-to, a myth, a before and after.
      A batch of the same Short with different words is mass-produced content, and YouTube does not pay
      for it.
-4. **Write each script.** 5 to 8 lines, 20 to 45 seconds spoken (about 2.6 words a second).
-   - **The hook:** line one, 9 words or fewer, the tension or the promise.
-   - **The ending:** the last line pays it off or gives the next step.
-   - **Emphasis:** mark one or two words per line with `*asterisks*` to show them in the accent color.
+4. **Write each Short as scenes.** Read `SCENES.md` in this folder first: it lists the scene types (hook,
+   list, checklist, steps, compare, stat, slam, punch, quote, chat, image, strike, text, end), their fields
+   and an example. 5 to 9 scenes, 20 to 45 seconds spoken (about 2.6 words a second).
+   - **The shape:** scene 1 is a `hook`, the last is `end`. Pick each scene's type for what it says: a
+     list for three tips, a compare for before and after, a strike for a myth, steps for a how-to.
+   - **Variety:** never the same type twice in a row, at least four types in a Short, and a different
+     mix from the other Shorts in this batch.
+   - **The hook:** its `say` is 12 words or fewer and its `text` 7 or fewer: the tension or the promise.
+   - **The ending:** the `end` scene's `say` pays it off or gives the next step, once.
+   - **Emphasis:** star one word or short phrase per headline (`*like this*`) for the accent colour.
+   - **The screen follows the voice:** on-screen words are words the voice says, so each one lands as
+     it is spoken.
    - **Plain language:** short sentences, US English unless the channel speaks another language.
    - **Allowed characters:** no em dashes, no emojis, no hashtags in the script.
    - **True only:** state no number, result, statistic, quote or story that the channel data or the
@@ -78,20 +88,19 @@ instead of `ls`, `which` or `cat`. The Write tool makes any folder it needs.
    - **Description:** two or three short lines, then three relevant hashtags.
    - **Tags:** 5 to 10.
 6. **Render.**
-   - Write `short.json` into a new folder `<folder>/<YYYY-MM-DD> <short-slug>/`. The format is at the
-     top of `engine/render.mjs`.
-   - Set `brand`, `theme`, `accent`, `voice` and `end` from the settings. For `end.sub`, use one short
-     line such as "Follow for more" or the handle.
-   - If `clips` is set, pick a fitting clip or image as `background`.
+   - Write `short.json` into a new folder `<folder>/<YYYY-MM-DD> <short-slug>/`: `title`, `brand`
+     (`name`, `handle`, `logo`), `theme`, `accent`, `voice`, `rate` and `music` from the settings, and
+     the `scenes`. For the `end` scene's `sub`, use the handle.
+   - If `clips` is set, an `image` scene can show one of the creator's own pictures or clips.
    - Run `node "<this skill folder>/engine/render.mjs" short.json`. It prints a JSON summary with the
-     paths of `short.mp4`, `cover.png` and `sheet.png`.
-   - If it stops because a line takes more than three rows on screen, split that line into two
-     shorter lines and run it again. It checks this before it draws a single frame.
-7. **Look before you schedule.** Open `sheet.png` (every line fully on screen, then the end card) and
+     paths of `short.mp4`, `cover.png` and `sheet.png`. A 30 second Short takes a minute or two.
+   - It checks every scene's layout before it draws a single frame. If it stops, it says which scene
+     and what to shorten: fix that and run it again.
+7. **Look before you schedule.** Open `sheet.png` (every scene once everything in it has landed) and
    `cover.png` and check:
    - no text is cut off or overlapping,
    - nothing is misspelled,
-   - no line runs over three lines on screen,
+   - every scene says what you meant and the icons fit,
    - the brand name is right.
    Fix the spec and render again until it is clean. Never upload a Short you have not looked at.
 8. **Schedule.** Call `runsheet_upload_video` with:
@@ -116,8 +125,10 @@ signed in at that time. The `README.md` next to this file gives the exact comman
 
 ## Rules that never bend
 
-- Every Short has a voice-over and captions in step with it. That is what the engine makes.
+- Every Short has a voice-over, captions in step with it, music and sound effects. That is what the
+  engine makes.
 - No realistic fake people, events or places, and no imitation of a real person's voice. The engine
-  draws words and the creator's own footage, which needs no altered-content label on YouTube.
+  draws type, cards and icons, and shows the creator's own footage, which needs no altered-content
+  label on YouTube.
 - Never promise views, growth or money, in a script or a title.
 - If you are unsure a fact is true, leave it out.

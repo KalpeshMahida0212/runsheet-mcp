@@ -2,7 +2,7 @@
   "name": "runsheet-shorts-engine",
   "private": true,
   "version": "1.0.0",
-  "description": "Renders a YouTube Short from a script on your own computer: a voice for every line, captions on the voice's timing, frames drawn in your own Chrome or Edge, encoded with ffmpeg.",
+  "description": "Renders a YouTube Short as motion graphics on your own computer: scenes timed to a voice, captions lit word by word, music and sound effects made in code, frames drawn in your own Chrome or Edge, encoded with ffmpeg.",
   "type": "module",
   "license": "MIT",
   "engines": {

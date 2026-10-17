@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { align } from "./lib/align.mjs";
 import { windows, appendWindow, tidy, group } from "./lib/words.mjs";
+import { readScenes, plan, themeOf } from "./lib/scenes.mjs";
 
 // a corrected name and a web address that was heard as six words do not pull the words after them out of step
 {
@@ -67,4 +68,42 @@ import { windows, appendWindow, tidy, group } from "./lib/words.mjs";
   assert.ok(w.every(([a, b]) => b - a <= 30 * rate));
 }
 
-console.log("ok: align, group, tidy, appendWindow, windows");
+// the script is checked: unknown types, missing fields and over-long lists are refused with the scene's number
+{
+  const bad = readScenes({ scenes: [{ type: "list", say: "x", text: "t", items: ["a"] }, { type: "wobble", say: "y" }] }, (p) => p);
+  assert.ok(bad.errors.some((e) => e.includes("scene 1 is the hook")));
+  assert.ok(bad.errors.some((e) => e.startsWith("scene 1 (list)") && e.includes("2 to 4")));
+  assert.ok(bad.errors.some((e) => e.startsWith("scene 2 (wobble)")));
+  const old = readScenes({ lines: ["First *line*.", "Second line."], end: { sub: "@me" } }, (p) => p);
+  assert.deepEqual(old.scenes.map((s) => s.type), ["hook", "text", "end"]);
+}
+
+// the plan: things land on their words, a slam keeps the scene before it on, a late landing gets a beat
+{
+  const clip = (text, dur = 2) => ({ duration: dur, words: text.split(" ").map((t, i) => ({ text: t, t0: 0.1 + i * 0.3, t1: 0.35 + i * 0.3 })) });
+  const scenes = readScenes({ scenes: [
+    { type: "hook", say: "Three rules for a shared login.", text: "Three *rules*" },
+    { type: "list", say: "Never paste it. Update everyone. Remove leavers.", text: "The rules", items: ["Never paste it", "Update everyone", "Remove leavers"] },
+    { type: "slam", say: "Done.", text: "Done" },
+    { type: "end", say: "Follow for more.", sub: "@me" },
+  ] }, (p) => p).scenes;
+  const P = plan(scenes, scenes.map((s) => clip(s.say, s.type === "list" ? 3 : 1.5)));
+  const [hook, list, slam] = P.scenes;
+  assert.ok(list.items.every((it, k) => k === 0 || it.at > list.items[k - 1].at), "list items land in order");
+  assert.ok(Math.abs(list.items[1].at - (list.voiceAt + 0.1 + 3 * 0.3 - 0.05)) < 0.01, "an item lands on its first word");
+  assert.equal(hook.overlap, 0.45);
+  assert.ok(list.overlap > slam.len, "the scene before a slam stays on under it");
+  assert.ok(P.scenes.every((s, i) => i === 0 || Math.abs(s.start - (P.scenes[i - 1].start + P.scenes[i - 1].len)) < 1e-9), "scenes follow on");
+  assert.ok(P.captions.length > 0 && P.hits.some((h) => Math.abs(h.t - (slam.start + slam.cues.slam)) < 1e-9));
+}
+
+// colours: white text on the fill and the accent text on cream stay readable, even from a pale accent
+{
+  const th = themeOf("#f5d76e");
+  const lum = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+  assert.ok(ratio(th.accentFill, "#ffffff") >= 3, "white on the fill");
+  assert.ok(ratio(th.accentText, th.paper) >= 3.2, "accent text on cream");
+}
+
+console.log("ok: align, group, tidy, appendWindow, windows, readScenes, plan, themeOf");
