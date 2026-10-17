@@ -30,78 +30,35 @@
   Writes short.mp4 (1080x1920, 30 fps, H.264 and AAC, -14 LUFS), cover.png, sheet.png (captions across the clip,
   tiled, to check by eye) and timeline.json, then prints a JSON summary.
 */
-import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSync, rmSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve, isAbsolute, parse } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { createRequire } from "node:module";
-import { spawn } from "node:child_process";
 import { chromium } from "playwright-core";
-import { FFMPEG, ff, duration } from "./lib/ff.mjs";
+import { ff, duration } from "./lib/ff.mjs";
 import { findBrowser } from "./lib/browser.mjs";
 import { align } from "./lib/align.mjs";
-import { windows, appendWindow, tidy, sentences, group } from "./lib/words.mjs";
+import { sentences, group } from "./lib/words.mjs";
+import { hear, stamp } from "./lib/hear.mjs";
 import { DEV, usePass, markMade } from "./lib/pass.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FPS = 30, W = 1080, H = 1920;
-const MODEL = "onnx-community/whisper-base_timestamped";
 
 function fail(msg) { process.stderr.write(`clip: ${msg}\n`); process.exit(1); }
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
-const stamp = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${(s % 60).toFixed(1).padStart(4, "0")}`;
 
 // ---------------------------------------------------------------- transcribe
-
-/** The sound as 16 kHz mono samples, the way Whisper hears it. */
-function samples(video) {
-  return new Promise((ok, no) => {
-    const p = spawn(FFMPEG, ["-v", "error", "-i", video, "-vn", "-ac", "1", "-ar", "16000", "-f", "f32le", "-"], { stdio: ["ignore", "pipe", "pipe"] });
-    const parts = [];
-    let err = "";
-    p.stdout.on("data", (d) => parts.push(d));
-    p.stderr.on("data", (d) => (err += d));
-    p.on("error", no);
-    p.on("close", (code) => {
-      if (code) return no(new Error(`could not read the sound of ${video}: ${err.slice(-300)}`));
-      const b = Buffer.concat(parts);
-      ok(new Float32Array(b.buffer, b.byteOffset, Math.floor(b.byteLength / 4)));
-    });
-  });
-}
 
 async function transcribe(video) {
   if (!video || !existsSync(video)) fail(`no video at ${video}`);
   video = resolve(video);
   const out = resolve(arg("--out") || join(dirname(video), `${parse(video).name} clips`));
   mkdirSync(out, { recursive: true });
-  const st = statSync(video);
   const jsonPath = join(out, "transcript.json");
-  const seconds = await duration(video);
   const began = Date.now();
-  let words = null;
-  if (existsSync(jsonPath)) {
-    const old = JSON.parse(readFileSync(jsonPath, "utf8"));
-    if (old.source === video && old.size === st.size && old.mtime === st.mtimeMs) words = old.words;
-  }
-  if (!words) {
-    let tf;
-    try { tf = createRequire(join(HERE, "stt", "package.json"))("@huggingface/transformers"); }
-    catch { fail(`the speech-to-text part is not installed yet. Run npm install --prefix "${join(HERE, "stt")}" once (about 470 MB), then run this again.`); }
-    tf.env.cacheDir = join(HERE, "stt", "models");
-    process.stderr.write(`clip: listening to ${stamp(seconds)} of sound (about a fifth of that on most computers; the model downloads once)\n`);
-    const asr = await tf.pipeline("automatic-speech-recognition", MODEL, { dtype: "fp32" });
-    const lang = arg("--language");
-    const audio = await samples(video), pieces = [], wins = windows(audio);
-    for (const [i, [a, b]] of wins.entries()) {
-      const r = await asr(audio.subarray(a, b), { return_timestamps: "word", task: "transcribe", ...(lang ? { language: lang } : {}) });
-      appendWindow(pieces, (r.chunks || []).filter((c) => c.timestamp?.[0] != null)
-        .map((c) => ({ text: c.text, timestamp: [c.timestamp[0] + a / 16000, (c.timestamp[1] ?? c.timestamp[0] + 0.3) + a / 16000] })));
-      if (i % 10 === 9) process.stderr.write(`clip: ${stamp(b / 16000)} of ${stamp(seconds)} heard\n`);
-    }
-    words = tidy(pieces);
-    if (!words.length) fail("no speech was found in this video.");
-    writeFileSync(jsonPath, JSON.stringify({ source: video, size: st.size, mtime: st.mtimeMs, seconds, words }));
-  }
+  const heard = await hear(video, jsonPath, { language: arg("--language"), log: (m) => process.stderr.write(`clip: ${m}\n`) }).catch((e) => fail(e.message));
+  const { words, seconds } = heard;
+  if (!words.length) fail("no speech was found in this video.");
   const said = sentences(words);
   const txt = join(out, "transcript.txt");
   writeFileSync(txt, [`${parse(video).base}, ${stamp(seconds)}, ${words.length} words. Times are minutes:seconds into the video.`, "",

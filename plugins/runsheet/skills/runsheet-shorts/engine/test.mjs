@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { align } from "./lib/align.mjs";
 import { windows, appendWindow, tidy, group } from "./lib/words.mjs";
 import { readScenes, plan, themeOf } from "./lib/scenes.mjs";
+import { parseReport } from "./lib/ff.mjs";
 
 // a corrected name and a web address that was heard as six words do not pull the words after them out of step
 {
@@ -106,4 +107,25 @@ import { readScenes, plan, themeOf } from "./lib/scenes.mjs";
   assert.ok(ratio(th.accentText, th.paper) >= 3.2, "accent text on cream");
 }
 
-console.log("ok: align, group, tidy, appendWindow, windows, readScenes, plan, themeOf");
+// a video's shape as it plays: a phone clip stored sideways is turned back, and a silent file says so
+{
+  const wide = [
+    "  Duration: 00:01:02.06, start: 0.000000",
+    "  Stream #0:0[0x1](und): Video: h264 (High), yuv420p(tv), 1920x1080 [SAR 1:1 DAR 16:9], 30 fps, 30 tbr",
+    "  Stream #0:1[0x2](und): Audio: aac (LC), 48000 Hz, stereo",
+  ].join("\n");
+  assert.deepEqual(parseReport(wide), { seconds: 62.06, width: 1920, height: 1080, fps: 30, audio: true });
+  const phone = [
+    "  Duration: 00:00:41.50, start: 0.000000",
+    "  Stream #0:0[0x1](und): Video: hevc (Main), yuv420p(tv), 1920x1080, 29.97 fps",
+    "      Side data:",
+    "        displaymatrix: rotation of -90.00 degrees",
+    "  Stream #0:1[0x2](und): Audio: aac",
+  ].join("\n");
+  assert.deepEqual(parseReport(phone), { seconds: 41.5, width: 1080, height: 1920, fps: 29.97, audio: true });
+  const silent = ["  Duration: 00:00:09.00, start: 0.000000", "  Stream #0:0: Video: h264, yuv420p, 1080x1920, 30 fps"].join("\n");
+  assert.equal(parseReport(silent).audio, false);
+  assert.throws(() => parseReport(["  Duration: N/A", "  Stream #0:0: Audio: mp3"].join("\n")));
+}
+
+console.log("ok: align, group, tidy, appendWindow, windows, readScenes, plan, themeOf, parseReport");

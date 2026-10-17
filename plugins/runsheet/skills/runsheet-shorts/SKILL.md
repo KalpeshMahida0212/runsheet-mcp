@@ -24,12 +24,13 @@ required tool or file is missing. Your own model writes every word; nothing here
    "theme": "light", "accent": "#ff4a36", "voice": "en-US-EmmaMultilingualNeural", "rate": "+8%",
    "music": "auto", "folder": "~/Videos/Runsheet Shorts", "brand": "<channel name>",
    "handle": "<@handle if known>", "logo": null, "topics": "<what the channel is about, one line>",
-   "clips": null, "longVideos": null }`.
+   "clips": null, "longVideos": null, "links": [] }`.
    `style` is the look of every Short (the styles are below). When the creator names a style in their
    request, use that one for this run. `accent` is the channel's color if its branding has one. `logo` may name the channel's square logo
    file. `music` is `auto` (music made for each Short), `none`, or the path of the creator's own track.
    `clips` may name a folder of the creator's own pictures or clips to show in `image` scenes.
-   `topics` is what the channel is about, in one line. Fill it from the channel's own description
+   `links` holds the lines the creator wants at the foot of every long video's description (their site, their
+   other channels); the skills never add a link of their own. `topics` is what the channel is about, in one line. Fill it from the channel's own description
    and titles. `longVideos` may name a folder of the creator's own long videos to cut Shorts from.
 
 ## The styles, and the pass every video needs
@@ -105,11 +106,16 @@ instead of `ls`, `which` or `cat`. The Write tool makes any folder it needs.
      at random".
    - **No tools named:** never mention Runsheet, Claude or any other tool in the script, title,
      description or tags, unless the channel itself is about that tool.
-5. **Write the metadata.**
-   - **Title:** 60 characters or fewer, the phrase people search for first, then ` #Shorts`. The same
+5. **Write the metadata** by YouTube's rules in `YOUTUBE.md`, in the `runsheet-write` skill folder next to
+   this one (read it the first time).
+   - **Title:** 20 to 40 characters, the phrase people search for first, in this Short's own words. No
+     hashtags: a vertical video under three minutes is a Short by itself, `#Shorts` adds nothing. The same
      rules as the script: no "most", "never" or "always" claims, nothing it cannot back up.
-   - **Description:** two or three short lines, then three relevant hashtags.
-   - **Tags:** 5 to 10.
+   - **Description:** a first line that says what the Short delivers, a second line if it helps, then up to
+     three topical hashtags on the last line. No web links: they are not clickable in a Short's description
+     (an @handle is).
+   - **Tags:** 5 to 10, the core phrase and its close variants.
+   - **Different every time:** no two Shorts in a batch share a title pattern or an opening line.
 6. **Render.**
    - **The pass:** call `runsheet_start_short` with the `style`, once for this video. If it refuses,
      stop here (see the styles above).

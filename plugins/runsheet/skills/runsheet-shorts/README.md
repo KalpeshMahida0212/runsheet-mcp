@@ -45,6 +45,7 @@ It needs Node 20 or newer and Chrome or Edge. The first run installs the engine'
 | `topics` | from the channel | What the channel is about, one line. Used when the library is too small |
 | `clips` | none | A folder of your own pictures or clips to show in picture scenes |
 | `longVideos` | none | A folder of your own long videos; each run cuts Shorts from the newest one not cut yet |
+| `links` | none | Lines for the foot of every long video's description, such as your site; nothing else is ever added |
 
 ## Styles
 

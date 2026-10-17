@@ -20,7 +20,10 @@ description: "A weekly review of the creator's YouTube channel with Runsheet: wh
    `runsheet_break_down_breakout` returns a brief, and you write the read and three angles for this
    channel.
 4. **Next week.** Three actions, each concrete and small. For example:
-   - "retitle X" (use `runsheet_generate_titles` and `runsheet_update_metadata`),
+   - "retitle X" (use `runsheet_generate_titles` and `runsheet_update_metadata`), only for a video well
+     under its format's median, and only one change at a time (the title or the thumbnail) so the creator can
+     tell what helped. YouTube does not penalize the edit itself. If the creator might be running a Test &
+     Compare test on it in Studio, ask first: a change through the API ends the test,
    - "make two more Shorts like Y",
    - "move the upload from Monday to Thursday".
    Save any new video idea with `runsheet_create_idea`.

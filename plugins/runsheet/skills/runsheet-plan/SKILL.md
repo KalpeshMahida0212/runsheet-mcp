@@ -23,6 +23,9 @@ result. Nothing is uploaded or published by this skill.
      watched channel's breakout.
    - Mix Shorts and long videos the way the channel already does.
    - Each idea has a working title, one sentence on the promise, and the format.
+   - **Working titles follow YouTube's rules:** under 60 characters with the phrase a viewer would search in
+     the first 40 (20 to 40 for a Short), no hashtags, at most one word in capitals, and only a promise the
+     video can keep. Searchable for a how-to, a real question or problem for a story. No two share a pattern.
    - For a breakout, `runsheet_break_down_breakout` returns a brief. Write the read and the angles
      from it yourself.
 4. **Script the first ones.** For the next three, call `runsheet_write_script` with the title and what

@@ -22,7 +22,9 @@ locally and nothing is sent anywhere until the upload.
 3. **Read all of it.** Read `transcript.txt` from start to end and look at `frames.png`.
 4. **Choose the moments.** One for each open day to fill (SKILL.md, step 2), five at most from one
    video.
-   - **Length:** 20 to 59 seconds, from the start of a sentence to the end of one.
+   - **Length:** 20 to 59 seconds, from the start of a sentence to the end of one. Never over 60 seconds
+     when the video has music the creator did not make: a Short over a minute with any copyright claim is
+     blocked worldwide.
    - **The first sentence is the hook.** It works with no earlier context: a question, a claim, a
      surprise or a promise.
    - **One whole thought.** It makes sense to someone who never saw the long video, and it ends on the
@@ -61,10 +63,14 @@ locally and nothing is sent anywhere until the upload.
    - the headline fits and reads well,
    - no face is cut off and nothing important is outside the frame.
    Fix `clip.json` and render again until it is clean.
-9. **Schedule** it as in SKILL.md, step 8.
-   - **Title:** what the moment promises, 60 characters or fewer, then ` #Shorts`.
-   - **Description:** two short lines about the moment, a line that points to the full video (with its
-     link if `runsheet_get_library` lists it), then three relevant hashtags.
+9. **Schedule** it as in SKILL.md, step 8, with the copy written by `YOUTUBE.md` (in the `runsheet-write`
+   skill folder).
+   - **Title:** what the moment promises, 20 to 40 characters, the searched phrase first, no hashtags.
+   - **Description:** two short lines about the moment, a line that says the full video is on the channel
+     and names it, then up to three topical hashtags. No web link: links in a Short's description are not
+     clickable.
+   - **In the report:** tell the creator to link the Short to the full video in YouTube Studio (the related
+     video setting), which only Studio can set.
 10. **Remember it.** Add the video's path and the start and end of each moment used to
     `<folder>/clips-log.json`, so the next run takes new moments or the next video.
 
