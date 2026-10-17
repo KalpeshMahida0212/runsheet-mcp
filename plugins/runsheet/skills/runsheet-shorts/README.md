@@ -1,10 +1,10 @@
 # runsheet-shorts
 
 Claude makes YouTube Shorts for your channel and schedules them with Runsheet. It reads your channel,
-writes each script as scenes and renders the Short on your computer as motion graphics: a voice,
-captions lit word by word, headlines that rise as they are said, cards, checklists, numbers and slams
-that land on their words, scenes that slide, flood and open in, music made for the video and a sound
-for every move. Then it checks the frames and schedules it into your open days.
+writes each script as scenes and renders the Short on your computer as motion graphics in the style
+you pick: a voice, headlines and type that land as they are said, cards, checklists, numbers and slams
+that hit on their words, scenes that slide, wipe, flood and open in, music made for the video and a
+sound for every move. Then it checks the frames and schedules it into your open days.
 It also cuts Shorts out of your own long videos, with captions that follow what you say.
 Your Claude does all the writing. Runsheet supplies your channel's data, uploads and schedules.
 
@@ -34,6 +34,7 @@ It needs Node 20 or newer and Chrome or Edge. The first run installs the engine'
 | `perWeek` | 7 | How many Shorts a run schedules (one a day at most) |
 | `time` | `10:00` | The time of day each one goes public, in `timeZone` |
 | `timeZone` | yours | An IANA zone, such as `America/New_York` |
+| `style` | `studio` | The look of every Short: `studio`, `kinetic`, `neon`, `pop` or `editorial` (see below) |
 | `theme` | `light` | `light` (cream) or `dark` (ink): the usual ground |
 | `accent` | `#ff4a36` | Your brand color; every other color is worked out from it |
 | `voice` | `en-US-EmmaMultilingualNeural` | Any Microsoft Edge neural voice |
@@ -44,6 +45,24 @@ It needs Node 20 or newer and Chrome or Edge. The first run installs the engine'
 | `topics` | from the channel | What the channel is about, one line. Used when the library is too small |
 | `clips` | none | A folder of your own pictures or clips to show in picture scenes |
 | `longVideos` | none | A folder of your own long videos; each run cuts Shorts from the newest one not cut yet |
+
+## Styles
+
+| Style | The look | Plan |
+|---|---|---|
+| Studio | Cream, ink or accent grounds, white cards, headlines that rise word by word, caption pills | Free and paid |
+| Kinetic | No captions: huge type stretched to the frame, slamming in word by word, wipes and hard hits | Paid |
+| Neon | Dark and electric: a synthwave grid, glass panels, glowing type typed in, glitch cuts | Paid |
+| Pop | Bright and playful: sticker cards with thick outlines, bouncy type, doodles and marker highlights | Paid |
+| Editorial | A calm magazine page: big serif type set line by line, hairlines, numerals and whitespace | Paid |
+
+Set one in the settings, or name it when you ask ("Make this week's Shorts in Neon"). Every style has its own
+transitions, music and sounds, so channels that use different styles never look alike.
+
+**What each plan makes.** A free Runsheet account makes one Short with this skill, in Studio. Starter makes
+15 Shorts a month, Creator 60 and Network 250, in every style. Each video gets a pass from Runsheet before it
+renders, and the paid styles come from Runsheet with that pass. A pass covers one video for two hours and
+six renders, so Claude can check and fix it before it is scheduled.
 
 ## Shorts from your long videos
 
@@ -96,8 +115,8 @@ It runs on your computer while the app is open and the computer is awake.
   YouTube does not pay for mass-produced, repetitive videos.
 - **Honest content:** a natural voice over words and your own footage. No realistic fake people,
   places or events, and no copied voices.
-- **Plan limits:** the uploads count against your Runsheet plan (Free is one video a week). Runsheet
-  refuses the rest, and the run stops and says so.
+- **Plan limits:** every Short needs a pass from your plan, and every upload counts against your
+  Runsheet plan's publishes. Runsheet refuses the rest, and the run stops and says so.
 
 ## The engine on its own
 
@@ -106,11 +125,12 @@ cd engine && npm install
 node render.mjs path/to/short.json
 ```
 
-The format of `short.json` is in `SCENES.md` and at the top of `engine/render.mjs`. It writes
+The format of `short.json` is in `SCENES.md` and at the top of `engine/render.mjs`. Every render needs the
+video's `pass` from `runsheet_start_short` (`engine/lib/pass.mjs`). It writes
 `short.mp4` (1080x1920, 30 fps, -14 LUFS), `cover.png` and `sheet.png`, and prints a JSON summary.
 Everything in the picture and the sound is made in code: the fonts (Inter Tight, Instrument Serif,
-JetBrains Mono) and the icons (Lucide) are open-licensed, and the music and effects are synthesized,
-so a Short can be published anywhere.
+JetBrains Mono, Instrument Sans, and each paid style's own) and the icons (Lucide) are open-licensed, and
+the music and effects are synthesized, so a Short can be published anywhere.
 
 For clips from a long video (after `npm install --prefix engine/stt`):
 

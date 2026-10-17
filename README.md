@@ -18,7 +18,7 @@ and adds four skills your own Claude runs:
 
 | Skill | What it does |
 |---|---|
-| `runsheet-shorts` | Makes YouTube Shorts on your computer (a voice, captions in step with it) and schedules them |
+| `runsheet-shorts` | Makes YouTube Shorts on your computer as motion graphics, in one of five styles, with a voice, music and sound, and schedules them |
 | `runsheet-plan` | Plans your next weeks from your own channel |
 | `runsheet-write` | Writes and saves titles, descriptions, tags, chapters, translations and posts |
 | `runsheet-review` | A weekly review of what beat your own numbers |

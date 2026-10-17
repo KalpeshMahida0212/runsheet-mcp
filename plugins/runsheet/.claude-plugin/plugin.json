@@ -1,7 +1,7 @@
 {
   "name": "runsheet",
-  "version": "1.2.0",
-  "description": "Runsheet for Claude: your Claude makes YouTube Shorts on your own computer and schedules them, plans your next weeks from your channel, writes and saves titles, descriptions and translations, and reviews what worked. Your Claude does the writing; Runsheet supplies the channel's data and does the uploading and scheduling.",
+  "version": "1.3.0",
+  "description": "Runsheet for Claude: your Claude makes YouTube Shorts on your own computer, in the style you pick, and schedules them, plans your next weeks from your channel, writes and saves titles, descriptions and translations, and reviews what worked. Your Claude does the writing; Runsheet supplies the channel's data and does the uploading and scheduling.",
   "author": { "name": "Kalpesh Mahida", "url": "https://runsheet.buildifyapp.in" },
   "homepage": "https://runsheet.buildifyapp.in/claude",
   "repository": "https://github.com/KalpeshMahida0212/runsheet-mcp",

@@ -13,6 +13,8 @@
       "accent": "#d6a85f",                                           the brand colour
       "voice": "en-US-AndrewNeural", "rate": "+6%",                  any Edge neural voice, optional rate
       "music": "auto",                                               auto (the made-up bed), none, or { "path", "volume" }
+      "style": "studio",                                             the look: studio (free) or one of the plan's styles
+      "pass": "...",                                                 this video's pass, from runsheet_start_short
       "scenes": [
         { "type": "hook", "say": "Sharing one login with your team? Three rules.", "text": "One login, three *rules*", "kicker": "team passwords" },
         { "type": "list", "say": "...", "text": "The *rules*", "items": ["Never paste it in chat", "..."] },
@@ -21,8 +23,10 @@
     }
 
   Every scene's length is its line's: the voice is spoken first, every word timed, and each thing on screen arrives
-  on the word that names it. Writes short.mp4 (1080x1920, 30 fps, H.264 and AAC, -14 LUFS), cover.png, sheet.png
-  (every scene once it has settled, tiled, to check by eye) and timeline.json, then prints a JSON summary.
+  on the word that names it.
+
+  Every video needs a pass (lib/pass.mjs). Writes short.mp4 (1080x1920, 30 fps, H.264 and AAC, -14 LUFS), cover.png,
+  sheet.png (every scene once it has settled, tiled, to check by eye) and timeline.json, then prints a JSON summary.
 */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve, isAbsolute } from "node:path";
@@ -34,6 +38,7 @@ import { findBrowser } from "./lib/browser.mjs";
 import { speak } from "./lib/voice.mjs";
 import { readScenes, themeOf, plan } from "./lib/scenes.mjs";
 import { mixSound } from "./lib/sound.mjs";
+import { DEV, usePass, markMade } from "./lib/pass.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FPS = 30, W = 1080, H = 1920;
@@ -60,12 +65,69 @@ function readSpec(path) {
     accent: /^#[0-9a-f]{6}$/i.test(s.accent || "") ? s.accent : "#ff4a36",
     voice: String(s.voice || "en-US-EmmaMultilingualNeural"),
     rate: s.rate ? String(s.rate) : null,
+    style: /^[a-z][a-z0-9-]{1,30}$/.test(s.style || "") ? s.style : "studio",
+    pass: s.pass ? String(s.pass) : null,
   };
 }
 
-async function openPage(browser, timeline) {
+/*
+  THE STYLE, AND THE PASS THAT LETS IT RUN. Studio is in this folder. Every other style comes from Runsheet with the
+  pass: { style: { name, fonts: [{ family, file, weight, style }], sound }, js, fonts: { file: base64 } }, written into
+  the work folder for this render only.
+*/
+async function styleFor(S, work) {
+  if (DEV && process.env.RUNSHEET_SHORTS_STYLES_DIR && S.style !== "studio") {
+    const dir = join(process.env.RUNSHEET_SHORTS_STYLES_DIR, S.style);
+    if (!existsSync(join(dir, "style.js"))) fail(`no style "${S.style}" in ${process.env.RUNSHEET_SHORTS_STYLES_DIR}`);
+    return { meta: JSON.parse(readFileSync(join(dir, "style.json"), "utf8")), js: join(dir, "style.js"), fontDir: join(dir, "fonts") };
+  }
+  const studio = { meta: STUDIO, js: join(HERE, "template", "styles", "studio.js"), fontDir: null };
+  if (DEV && S.style === "studio") return studio;
+  const body = await usePass(S.pass, S.style).catch((e) => fail(e.message));
+  if (S.style === "studio") return studio;
+  const dir = join(work, "style");
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(join(dir, "fonts"), { recursive: true });
+  writeFileSync(join(dir, "style.js"), body.js);
+  for (const [file, b64] of Object.entries(body.fonts ?? {})) writeFileSync(join(dir, "fonts", file.replace(/[^A-Za-z0-9._-]/g, "")), Buffer.from(b64, "base64"));
+  return { meta: body.style, js: join(dir, "style.js"), fontDir: join(dir, "fonts") };
+}
+
+const STUDIO = { name: "studio", title: "Studio", fonts: [], sound: { kit: "studio" } };
+const CORE_FONTS = [
+  { family: "Inter Tight", file: "InterTight.woff2", weight: "600 900", style: "normal" },
+  { family: "Instrument Serif", file: "InstrumentSerif-Italic.woff2", weight: "400", style: "italic" },
+  { family: "JetBrains Mono", file: "JetBrainsMono.woff2", weight: "500 700", style: "normal" },
+  { family: "Instrument Sans", file: "InstrumentSans.woff2", weight: "400 700", style: "normal" },
+];
+
+/** The page a style draws on: the core fonts and the style's, the icons, the core, then the style. */
+function writePage(work, style) {
+  const url = (f) => pathToFileURL(f).href;
+  const face = (f, dir) => `@font-face { font-family: "${f.family}"; src: url("${url(join(dir, f.file))}") format("woff2"); font-weight: ${f.weight}; font-style: ${f.style || "normal"}; }`;
+  const page = `<!doctype html><html><head><meta charset="utf-8" /><style>
+${CORE_FONTS.map((f) => face(f, join(HERE, "fonts"))).join("\n")}
+${(style.meta.fonts ?? []).map((f) => face(f, style.fontDir)).join("\n")}
+html, body { margin: 0; padding: 0; width: 1080px; height: 1920px; overflow: hidden; background: #f8f6f3; }
+body { font-family: "Inter Tight", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+#stage { position: absolute; inset: 0; overflow: hidden; }
+#cam { position: absolute; inset: 0; transform-origin: 540px 960px; }
+.scene { position: absolute; inset: 0; overflow: hidden; display: none; isolation: isolate; }
+#caps { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; pointer-events: none; }
+</style></head><body>
+<div id="stage"><div id="cam"></div><div id="caps"></div></div>
+<script src="${url(join(HERE, "template", "icons.js"))}"></script>
+<script src="${url(join(HERE, "template", "core.js"))}"></script>
+<script src="${url(style.js)}"></script>
+</body></html>`;
+  const file = join(work, "page.html");
+  writeFileSync(file, page);
+  return pathToFileURL(file).href;
+}
+
+async function openPage(browser, timeline, pageUrl) {
   const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
-  await page.goto(pathToFileURL(join(HERE, "template", "motion.html")).href);
+  await page.goto(pageUrl);
   await page.evaluate((tl) => window.load(tl), timeline);
   await page.waitForFunction(() => window.ready === true, null, { timeout: 60000 });
   return page;
@@ -81,6 +143,10 @@ async function main() {
   const framesDir = join(work, "frames");
   rmSync(framesDir, { recursive: true, force: true });
   mkdirSync(framesDir, { recursive: true });
+
+  // 0. the pass and the style, before anything is spent on this video
+  const style = await styleFor(S, work);
+  const pageUrl = writePage(work, style);
 
   // 1. the voice: one clip a scene, every word timed
   const spoken = S.scenes.map((sc, i) => (sc.say ? i : -1)).filter((i) => i >= 0);
@@ -102,20 +168,20 @@ async function main() {
 
   // 3. the layout, checked before a single frame is drawn
   const browser = await chromium.launch({ executablePath: findBrowser(), args: ["--allow-file-access-from-files", "--autoplay-policy=no-user-gesture-required", "--hide-scrollbars"] });
-  const first = await openPage(browser, timeline);
+  const first = await openPage(browser, timeline, pageUrl);
   const problems = await first.evaluate(() => window.problems);
   if (problems.length) { await browser.close(); fail(problems.join("\n         ")); }
 
   // 4. the sound: the voice, the score and the hits, at -14 LUFS
   say("mixing the sound");
   const mix = join(work, "mix.wav");
-  mixSound({ plan: P, voices: P.scenes.filter((s, i) => clips[i]).map((s) => ({ file: clips[s.no - 1].file, at: s.start + s.voiceAt })), music: S.music, out: mix, work });
+  mixSound({ plan: P, voices: P.scenes.filter((s, i) => clips[i]).map((s) => ({ file: clips[s.no - 1].file, at: s.start + s.voiceAt })), music: S.music, out: mix, work, profile: style.meta.sound ?? {} });
 
   // 5. the frames, on a few tabs at once
   const frames = Math.ceil(P.total * FPS);
   const tabs = Math.max(1, Math.min(4, cpus().length - 2));
   const pages = [first];
-  for (let k = 1; k < tabs; k++) pages.push(await openPage(browser, timeline));
+  for (let k = 1; k < tabs; k++) pages.push(await openPage(browser, timeline, pageUrl));
   let done = 0;
   await Promise.all(pages.map(async (page, k) => {
     const a = Math.floor((k * frames) / tabs), b = Math.floor(((k + 1) * frames) / tabs);
@@ -129,10 +195,11 @@ async function main() {
   // 6. the cover: the hook once its confetti has settled, without the caption, for a clean thumbnail
   const hook = P.scenes[0];
   const coverAt = hook.start + Math.min(hook.len - 0.15, Math.max(hook.settle, (hook.cues.icon ?? 0) + 1.6));
-  await first.evaluate(async (x) => { document.getElementById("caps").style.visibility = "hidden"; await window.seek(x); }, coverAt);
+  // display, not visibility: a style whose caption layer sets visibility on its own children would show through
+  await first.evaluate(async (x) => { document.getElementById("caps").style.display = "none"; await window.seek(x); }, coverAt);
   const cover = join(S.out, "cover.png");
   await first.screenshot({ path: cover, type: "png" });
-  await first.evaluate(() => { document.getElementById("caps").style.visibility = ""; });
+  await first.evaluate(() => { document.getElementById("caps").style.display = ""; });
   // and every scene once it has settled, to check by eye
   for (const f of readdirSync(work)) if (/^sheet-\d+\.jpg$/.test(f)) rmSync(join(work, f));
   for (const [i, s] of P.scenes.entries()) {
@@ -154,10 +221,12 @@ async function main() {
     "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", video,
   ]);
   rmSync(framesDir, { recursive: true, force: true });
+  rmSync(join(work, "style"), { recursive: true, force: true });
 
   const len = await duration(video);
+  await markMade(S.pass, Number(len.toFixed(2)));
   process.stdout.write(JSON.stringify({
-    ok: true, video, cover, sheet, seconds: Number(len.toFixed(2)), frames,
+    ok: true, video, cover, sheet, style: style.meta.name, seconds: Number(len.toFixed(2)), frames,
     scenes: P.scenes.map((s) => ({ type: s.type, start: Number(s.start.toFixed(2)), seconds: Number(s.len.toFixed(2)), say: s.say })),
     renderSeconds: Math.round((Date.now() - t0) / 1000),
   }, null, 2) + "\n");

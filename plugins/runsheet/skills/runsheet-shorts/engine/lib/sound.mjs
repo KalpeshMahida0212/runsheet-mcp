@@ -60,10 +60,11 @@ function decode(file, channels = 1) {
 }
 
 /**
- * The mix for a plan: `voices` are [{ file, at }] (seconds), `music` is "auto", "none" or { path, volume }.
+ * The mix for a plan: `voices` are [{ file, at }] (seconds), `music` is "auto", "none" or { path, volume }. `profile` is
+ * the style's sound: { bpm, prog, progDark, sections: { hook|main|dark|drop|end: groove gains }, drums, hits, kit }.
  * Writes a 48 kHz 16-bit stereo wav at -14 LUFS to `out` and returns { lufs, peak, hits }.
  */
-export function mixSound({ plan, voices, music = "auto", out, work }) {
+export function mixSound({ plan, voices, music = "auto", out, work, profile = {} }) {
   const DUR = plan.total, N = Math.round(DUR * SR);
   const bus = () => [new Float32Array(N), new Float32Array(N)];
   const DR = bus(), MU = bus(), FX = bus(), HT = bus(), SEND = bus();
@@ -255,9 +256,11 @@ export function mixSound({ plan, voices, music = "auto", out, work }) {
   const roll = (t, g0 = 0.26) => [0.32, 0.24, 0.17, 0.11, 0.06, 0.03].forEach((dt, i) => snare(t - dt, g0 + i * 0.08, 210 + i * 25));
 
   // ------------------------------------------------------------ the bed
+  const BEAT = 60 / (profile.bpm ?? 120), BAR = 4 * BEAT, S16 = BEAT / 4;
+  const PROG = profile.prog ?? PROG_A, PROGD = profile.progDark ?? PROG_D;
   function groove(t0, t1, o) {
-    const { grid0 = t0, prog = PROG_A, kick: gk = 1, clap: gc = 0.5, hat: gh = 0.4, bass: gb = 0.7, arp: ga = 0.12, pad: gp = 0.4, sub: gs = 0.3, sixteenth = false, crashEvery = 0 } = o;
-    const BAR = 2, beat = (k) => grid0 + k * 0.5, k0 = Math.ceil((t0 - grid0) / 0.5 - 1e-6);
+    const { grid0 = t0, prog = PROG, kick: gk = 1, clap: gc = 0.5, hat: gh = 0.4, bass: gb = 0.7, arp: ga = 0.12, pad: gp = 0.4, sub: gs = 0.3, sixteenth = false, crashEvery = 0 } = o;
+    const beat = (k) => grid0 + k * BEAT, k0 = Math.ceil((t0 - grid0) / BEAT - 1e-6);
     const chordAt = (t) => CHORDS[prog[Math.max(0, Math.floor((t - grid0 + 1e-6) / BAR)) % prog.length]];
     for (let b = Math.floor((t0 - grid0) / BAR); grid0 + b * BAR < t1; b++) {
       const bs = Math.max(grid0 + b * BAR, t0), be = Math.min(grid0 + (b + 1) * BAR, t1);
@@ -272,19 +275,29 @@ export function mixSound({ plan, voices, music = "auto", out, work }) {
       const ch = chordAt(t), bi = ((k % 4) + 4) % 4;
       if (gk) kick(t, gk);
       if (gc && (bi === 1 || bi === 3)) clap(t, gc);
-      if (gh) hat(t + 0.25, gh, true, 0.15);
-      if (gb) { bass(t + 0.25, 0.2, ch.root + 12, gb); if (bi === 0) bass(t, 0.12, ch.root, gb * 0.7); }
+      if (gh) hat(t + BEAT / 2, gh, true, 0.15);
+      if (gb) { bass(t + BEAT / 2, BEAT * 0.4, ch.root + 12, gb); if (bi === 0) bass(t, BEAT * 0.24, ch.root, gb * 0.7); }
     }
-    const s0 = Math.ceil((t0 - grid0) / 0.125 - 1e-6);
-    for (let s = s0; grid0 + s * 0.125 < t1 - 1e-6; s++) {
-      const t = grid0 + s * 0.125; if (t < t0 - 1e-6) continue;
+    const s0 = Math.ceil((t0 - grid0) / S16 - 1e-6);
+    for (let s = s0; grid0 + s * S16 < t1 - 1e-6; s++) {
+      const t = grid0 + s * S16; if (t < t0 - 1e-6) continue;
       const ch = chordAt(t);
       if (gh && (sixteenth ? s % 2 === 1 : s % 4 === 3)) hat(t, [0.28, 0.13, 0, 0.17][((s % 4) + 4) % 4] * gh * 2.2, false, s % 4 === 1 ? -0.35 : 0.35);
-      if (ga) { const m = ch.arp[((s % 8) + 8) % 8]; pluck(t, m, ga, s % 2 ? 0.35 : -0.35); if (s % 3 === 0) pluck(t + 0.375, m, ga * 0.35, s % 2 ? -0.5 : 0.5, 0.4); }
+      if (ga) { const m = ch.arp[((s % 8) + 8) % 8]; pluck(t, m, ga, s % 2 ? 0.35 : -0.35); if (s % 3 === 0) pluck(t + 3 * S16, m, ga * 0.35, s % 2 ? -0.5 : 0.5, 0.4); }
     }
   }
 
   // ------------------------------------------------------------ the arrangement, from the plan
+  const SECTION = {
+    hook: { kick: 0.78, clap: 0, hat: 0.3, bass: 0.55, arp: 0.09, pad: 0.34, sub: 0.22 },
+    main: { kick: 0.92, clap: 0.5, hat: 0.4, bass: 0.7, arp: 0.12, pad: 0.44, sub: 0.28, crashEvery: 4 },
+    dark: { prog: PROGD, kick: 0.92, clap: 0.48, hat: 0.4, bass: 0.78, arp: 0.14, pad: 0.48, sub: 0.32, sixteenth: true, crashEvery: 4 },
+    drop: { kick: 0.95, clap: 0.55, hat: 0.4, bass: 0.72, arp: 0.125, pad: 0.46, sub: 0.3, crashEvery: 4 },
+    end: { kick: 0.85, clap: 0.42, hat: 0.36, bass: 0.62, arp: 0.13, pad: 0.4, sub: 0.26 },
+  };
+  for (const [k, v] of Object.entries(profile.sections ?? {})) SECTION[k] = { ...SECTION[k], ...v, ...(k === "dark" ? { prog: PROGD } : {}) };
+  if (profile.drums === false) for (const v of Object.values(SECTION)) Object.assign(v, { kick: 0, clap: 0, hat: 0 });
+  const hits = profile.hits ?? 1;
   const S = plan.scenes, bed = music === "auto";
   const moodOf = (s, i) => (i === 0 ? "hook" : s.type === "end" ? "end" : s.ground === "punch" ? "drop" : s.ground === "dark" ? "dark" : "main");
   const sections = [];
@@ -300,27 +313,28 @@ export function mixSound({ plan, voices, music = "auto", out, work }) {
     const into = k > 0 && (sec.mood === "dark" || sec.mood === "drop");
     // the hit that opens a dark or accent section lands on the scene's own moment
     const land = sec.mood === "drop" ? sec.scene.start + (sec.scene.type === "stat" ? sec.scene.cues.value : sec.scene.cues.land ?? 0.05) : t0 + 0.02;
-    if (into) {
-      riser(Math.max(0, land - 1.1), land - 0.03, 0.36, 220, 7000);
-      roll(land, 0.24);
-      impact(land, sec.mood === "drop" ? 1.0 : 0.9);
-      crash(land, 0.8);
-      kick(land, 1.15, 0.3);
+    if (into && hits > 0) {
+      riser(Math.max(0, land - 1.1), land - 0.03, 0.36 * hits, 220, 7000);
+      if (profile.drums !== false) roll(land, 0.24 * hits);
+      impact(land, (sec.mood === "drop" ? 1.0 : 0.9) * hits);
+      crash(land, 0.8 * hits);
+      if (profile.drums !== false) kick(land, 1.15, 0.3);
       sub(land, land + 1.4, sec.mood === "drop" ? 29 : 26, 0.55);
       note(land, `${sec.mood}: impact, crash, sub`);
     }
     if (!bed) continue;
-    if (sec.mood === "hook") groove(t0, t1, { kick: 0.78, clap: 0, hat: 0.3, bass: 0.55, arp: 0.09, pad: 0.34, sub: 0.22 });
-    else if (sec.mood === "main") groove(t0, t1, { kick: 0.92, clap: 0.5, hat: 0.4, bass: 0.7, arp: 0.12, pad: 0.44, sub: 0.28, crashEvery: 4 });
-    else if (sec.mood === "dark") groove(t0 + 0.02, t1, { prog: PROG_D, kick: 0.92, clap: 0.48, hat: 0.4, bass: 0.78, arp: 0.14, pad: 0.48, sub: 0.32, sixteenth: true, crashEvery: 4 });
+    if (sec.mood === "hook") groove(t0, t1, SECTION.hook);
+    else if (sec.mood === "main") groove(t0, t1, SECTION.main);
+    else if (sec.mood === "dark") groove(t0 + 0.02, t1, SECTION.dark);
     else if (sec.mood === "drop") {
       // the bed waits for the drop: a held pad and a rising sub, then the full groove from the hit
-      if (land - t0 > 0.3) { pad(t0, land - t0 - 0.05, [48, 52, 55, 59, 64], 0.4, { attack: 0.05, release: 0.3, cut0: 1800, cut1: 5200, send: 0.5 }); sub(t0, land - 0.02, 33, 0.35, 12); }
-      groove(land, t1, { grid0: land, kick: 0.95, clap: 0.55, hat: 0.4, bass: 0.72, arp: 0.125, pad: 0.46, sub: 0.3, crashEvery: 4 });
+      if (land - t0 > 0.3) { pad(t0, land - t0 - 0.05, CHORDS[PROG[0]].chord, 0.4, { attack: 0.05, release: 0.3, cut0: 1800, cut1: 5200, send: 0.5 }); sub(t0, land - 0.02, CHORDS[PROG[0]].root, 0.35, 12); }
+      groove(land, t1, { ...SECTION.drop, grid0: land });
     } else if (sec.mood === "end") {
-      if (tMark - t0 > 0.4) groove(t0, tMark - 0.02, { kick: 0.85, clap: 0.42, hat: 0.36, bass: 0.62, arp: 0.13, pad: 0.4, sub: 0.26 });
-      pad(tMark, 0.5, [33, 45, 52, 57, 60, 64, 71], 0.8, { attack: 0.004, release: 2.0, cut0: 6000, cut1: 1500, send: 0.6, target: FX });
-      pad(tMark + 0.25, Math.max(0.5, DUR - tMark - 0.9), [57, 64, 69, 71, 76], 0.3, { attack: 0.4, release: 0.6, cut0: 1200, cut1: 2400, send: 0.5, target: FX });
+      if (tMark - t0 > 0.4) groove(t0, tMark - 0.02, SECTION.end);
+      const ch = CHORDS[PROG[0]];
+      pad(tMark, 0.5, [ch.root, ch.root + 12, ...ch.chord], 0.8, { attack: 0.004, release: 2.0, cut0: 6000, cut1: 1500, send: 0.6, target: FX });
+      pad(tMark + 0.25, Math.max(0.5, DUR - tMark - 0.9), ch.chord.map((m) => m + 12).slice(0, 4), 0.3, { attack: 0.4, release: 0.6, cut0: 1200, cut1: 2400, send: 0.5, target: FX });
     }
   }
   if (music && typeof music === "object" && music.path) {
@@ -329,87 +343,143 @@ export function mixSound({ plan, voices, music = "auto", out, work }) {
     for (let n = 0; n < N; n++) { const k = (n % n2) * 2; put(MU, n, x[k] * g, x[k + 1] * g); }
   }
 
-  // ------------------------------------------------------------ every scene's sounds
+  // ------------------------------------------------------------ every scene's sounds, in the style's own kit
+  const boing = (t, g = 1, f0 = 520) => {
+    const i0 = Math.round(t * SR); let ph = 0;
+    for (let n = 0; n < 0.45 * SR; n++) {
+      const s = n / SR, f = f0 * (0.45 + 0.55 * Math.exp(-s * 9)) * (1 + 0.12 * Math.sin(s * 70) * Math.exp(-s * 6));
+      ph += (2 * Math.PI * f) / SR;
+      const x = Math.sin(ph) * Math.min(1, s / 0.003) * Math.exp(-s * 7) * g;
+      put(FX, i0 + n, x, x, 0.2);
+    }
+  };
+  const chirp = (t, g = 1) => { blip(t, 1320, 0.9 * g, -0.1); blip(t + 0.09, 1760, g, 0.1); };
+  const zap = (t, g = 1) => whoosh(t, 0.14, g, 5200, 600, 0.3, -0.3, "fall");
+  const enterSound = {
+    slide: (t) => whoosh(t - 0.05, 0.34, 0.34, 500, 3200, 0.6, -0.6, "bell"),
+    flood: (t) => whoosh(t - 0.28, 0.3, 0.34, 300, 5000, -0.4, 0.4, "rise"),
+    dome: (t) => whoosh(t - 0.3, 0.32, 0.4, 120, 2600, 0, 0, "rise"),
+    zoom: (t) => whoosh(t - 0.02, 0.3, 0.34, 2800, 350, 0.5, -0.5, "fall"),
+    cut: () => {},
+  };
+  const KITS = {
+    studio: {
+      cut: (t, kind) => enterSound[kind]?.(t),
+      word: (t, i) => tick(t, 1500 + (i % 6) * 150, 0.06, -0.3 + (i % 5) * 0.15),
+      accent: (t, no) => { pop(t, 620, 0.14); bell(t + 0.03, 88 + (no % 3) * 2, 0.1, 0); },
+      icon: (t) => { whoosh(t - 0.08, 0.3, 0.16, 500, 3200, 0, 0, "bell"); pop(t, 540, 0.16); bell(t + 0.04, 91, 0.12, 0); tom(t, 0.22); },
+      land: (t, i) => { tom(t, 0.22); pop(t, 480 + i * 80, 0.14, -0.4 + i * 0.27); blip(t + 0.03, mtof(PENTA[5 + i]), 0.08, -0.4 + i * 0.27); },
+      check: (t, i) => { tick(t, 2400 + i * 200, 0.15); pop(t + 0.01, 700, 0.1); bell(t + 0.04, [88, 91, 93, 96][i % 4], 0.11, -0.3 + i * 0.2); },
+      step: (t, i) => { if (i) whoosh(t - 0.3, 0.28, 0.1, 400, 2400, 0, 0, "rise"); pop(t, 520 + i * 60, 0.14); blip(t + 0.03, mtof(PENTA[4 + i]), 0.08); },
+      side: (t, right) => { whoosh(t - 0.1, 0.3, 0.2, 400, 2600, right ? 0.7 : -0.7, 0, "bell"); tom(t, right ? 0.24 : 0.2); if (right) { pop(t - 0.12, 560, 0.15); bell(t + 0.04, 93, 0.11, 0.2); } },
+      count: (tv) => { for (let i = 0; i < 8; i++) tick(tv - 0.6 + i * 0.07, 2600 + i * 220, 0.06, i % 2 ? 0.3 : -0.3); bell(tv + 0.06, 93, 0.14, 0); bell(tv + 0.12, 100, 0.1, 0.3); [0.1, 0.18, 0.26, 0.34].forEach((dt, i) => blip(tv + dt, mtof(PENTA[7 + i]), 0.08, -0.5 + i * 0.35)); },
+      slam: (ts) => { impact(ts, 0.9); sub(ts, ts + 1.0, 28, 0.5); crash(ts, 0.5, HT); },
+      punch: (tl) => { clap(tl, 0.32); bell(tl + 0.05, 93, 0.12, 0); },
+      type: (t0, t1) => types(t0, Math.max(4, Math.round((t1 - t0) / 0.07)), 0.07, 2000, 0.035),
+      message: (t, me, i) => { pop(t, me ? 760 : 560, 0.15, me ? 0.4 : -0.4); blip(t + 0.03, mtof(PENTA[(me ? 7 : 5) + (i % 2)]), 0.08, me ? 0.4 : -0.4); },
+      image: (t) => { whoosh(t + 0.02, 0.3, 0.14, 500, 2600, 0, 0, "bell"); tick(t + 0.12, 3200, 0.12); pop(t + 0.14, 600, 0.1); },
+      strike: (t) => { whoosh(t - 0.02, 0.26, 0.26, 2800, 500, -0.6, 0.6, "fall"); tick(t, 1800, 0.12); tom(t + 0.04, 0.18); },
+      mark: (t, sub) => { impact(t, 0.45); [[0.07, 81], [0.2, 88], [0.33, 93], [0.5, 95]].forEach(([dt, m], j) => bell(t + dt, m, 0.12, -0.3 + j * 0.2, CHIME, 2.0)); if (sub) types(t + 0.28, Math.min(24, sub.length), 0.035, 2100, 0.03); },
+      stamp: (t) => { impact(t, 0.6); crash(t, 0.38, HT); sub(t, t + 0.9, 31, 0.4); [0.04, 0.1, 0.16, 0.24, 0.32, 0.42].forEach((dt, i) => blip(t + dt, mtof(PENTA[6 + i]), 0.07, -0.6 + i * 0.25)); },
+    },
+  };
+  // Kinetic: everything is a hit. Short whooshes and snares on the cuts, a thud on every word that lands.
+  KITS.kinetic = {
+    ...KITS.studio,
+    cut: (t, kind) => { if (kind !== "cut") whoosh(t - 0.06, 0.18, 0.4, 900, 4200, 0.5, -0.5, "fall"); snare(t, 0.32, 230); },
+    word: (t, i) => { tick(t, 2200 + (i % 4) * 180, 0.05, (i % 2 ? 0.25 : -0.25)); if (i % 2 === 0) hat(t, 0.22, false, i % 4 ? 0.3 : -0.3); },
+    accent: (t) => { impact(t, 0.32); kick(t, 0.9, 0); },
+    icon: (t) => { impact(t, 0.3); snare(t + 0.02, 0.25, 210); },
+    land: (t, i) => { kick(t, 0.85, 0); clap(t, 0.28); tick(t, 3000 + i * 300, 0.07); },
+    check: (t, i) => { clap(t, 0.25); tick(t, 3200 + i * 250, 0.09); },
+    step: (t, i) => { kick(t, 0.8, 0); tick(t, 2600 + i * 300, 0.08); },
+    side: (t, right) => { whoosh(t - 0.08, 0.2, 0.3, 800, 3600, right ? 0.7 : -0.7, 0, "fall"); snare(t, 0.3, 220); },
+    punch: (tl) => { impact(tl, 0.6); clap(tl, 0.4); },
+    message: (t, me) => { snare(t, 0.2, me ? 260 : 200); tick(t, me ? 3400 : 2400, 0.08); },
+    image: (t) => { whoosh(t, 0.2, 0.3, 900, 4200, 0, 0, "fall"); snare(t + 0.1, 0.26); },
+    strike: (t) => { whoosh(t - 0.02, 0.2, 0.34, 3600, 400, -0.7, 0.7, "fall"); snare(t, 0.34, 180); },
+    mark: (t, sub) => { impact(t, 0.8); crash(t, 0.5, HT); if (sub) types(t + 0.28, Math.min(24, sub.length), 0.03, 2600, 0.035); },
+    stamp: (t) => { impact(t, 0.7); roll(t, 0.22); },
+  };
+  // Neon: digital. Blips for words, zaps for cuts, a rising chirp for every card.
+  KITS.neon = {
+    ...KITS.studio,
+    cut: (t, kind) => { if (kind !== "cut") { riser(Math.max(0, t - 0.28), t - 0.02, 0.16, 400, 6000); zap(t, 0.22); } },
+    word: (t, i) => blip(t, 1700 + (i % 6) * 110, 0.05, -0.3 + (i % 5) * 0.15),
+    accent: (t) => { blip(t, 2200, 0.1); blip(t + 0.06, 2930, 0.1); bell(t + 0.04, 96, 0.08, 0); },
+    icon: (t) => [0, 0.06, 0.12].forEach((dt, k) => blip(t + dt, mtof(PENTA[6 + k * 2]), 0.09, -0.3 + k * 0.3)),
+    land: (t, i) => { blip(t, mtof(PENTA[4 + i]), 0.1, -0.3 + i * 0.3); blip(t + 0.05, mtof(PENTA[6 + i]), 0.08, -0.3 + i * 0.3); zap(t, 0.08); },
+    check: (t, i) => { blip(t, 1320 + i * 120, 0.1); blip(t + 0.07, 1760 + i * 160, 0.1); },
+    step: (t, i) => { blip(t, mtof(PENTA[5 + i]), 0.11); zap(t, 0.07); },
+    side: (t, right) => { zap(t - 0.04, 0.16); blip(t, right ? 1760 : 1100, 0.1, right ? 0.5 : -0.5); },
+    punch: (tl) => { bell(tl, 96, 0.12, 0); blip(tl + 0.05, 2640, 0.08); },
+    type: (t0, t1) => types(t0, Math.max(4, Math.round((t1 - t0) / 0.05)), 0.05, 3200, 0.03),
+    message: (t, me, i) => { blip(t, me ? 1760 : 1320, 0.11, me ? 0.4 : -0.4); blip(t + 0.06, me ? 2200 : 1650, 0.09, me ? 0.4 : -0.4); void i; },
+    image: (t) => { zap(t, 0.16); tick(t + 0.1, 3600, 0.1); },
+    strike: (t) => { zap(t, 0.3); blip(t + 0.02, 440, 0.12); },
+  };
+  // Pop: playful. Pops on words, a boing on the accent, claps on the cuts.
+  KITS.pop = {
+    ...KITS.studio,
+    cut: (t, kind) => { if (kind !== "cut") { whoosh(t - 0.06, 0.3, 0.26, 600, 3000, 0.6, -0.6, "bell"); clap(t, 0.22); } },
+    word: (t, i) => pop(t, 760 + (i % 6) * 70, 0.07, -0.3 + (i % 5) * 0.15),
+    accent: (t) => { boing(t, 0.22, 560); chirp(t + 0.12, 0.08); },
+    icon: (t) => { boing(t, 0.3, 480); pop(t, 640, 0.14); },
+    land: (t, i) => { pop(t, 600 + i * 90, 0.15, -0.4 + i * 0.3); boing(t + 0.02, 0.12, 700 + i * 60); },
+    check: (t, i) => { pop(t, 900, 0.12); bell(t + 0.04, [91, 93, 96, 98][i % 4], 0.11, -0.3 + i * 0.2); },
+    side: (t, right) => { whoosh(t - 0.1, 0.28, 0.2, 500, 2600, right ? 0.7 : -0.7, 0, "bell"); boing(t, 0.18, right ? 620 : 460); },
+    slam: (ts) => { impact(ts, 0.5); boing(ts + 0.02, 0.3, 300); },
+    punch: (tl) => { clap(tl, 0.36); boing(tl + 0.03, 0.2, 520); bell(tl + 0.06, 93, 0.1, 0); },
+    message: (t, me) => { pop(t, me ? 880 : 640, 0.15, me ? 0.4 : -0.4); chirp(t + 0.05, 0.06); },
+    strike: (t) => { whoosh(t - 0.02, 0.26, 0.24, 2800, 500, -0.6, 0.6, "fall"); boing(t + 0.04, 0.2, 260); },
+    stamp: (t) => { impact(t, 0.4); boing(t + 0.02, 0.3, 420); [0.08, 0.16, 0.24].forEach((dt, i) => blip(t + dt, mtof(PENTA[7 + i]), 0.07)); },
+  };
+  // Editorial: quiet. Soft bells and long, low whooshes; no impacts.
+  KITS.editorial = {
+    cut: (t, kind) => { if (kind !== "cut") whoosh(t - 0.3, 0.5, 0.12, 200, 1600, -0.3, 0.3, "bell"); },
+    word: () => {},
+    accent: (t, no) => bell(t + 0.02, 81 + (no % 3) * 2, 0.06, 0, CHIME, 2.4),
+    icon: (t) => bell(t, 88, 0.07, 0, CHIME, 2.4),
+    land: (t, i) => { tick(t, 1200 + i * 100, 0.035); bell(t + 0.02, 76 + i * 3, 0.05, -0.2 + i * 0.2, CHIME, 2.0); },
+    check: (t, i) => { tick(t, 1400 + i * 100, 0.04); bell(t + 0.02, 81 + i * 2, 0.05, 0, CHIME, 2.0); },
+    step: (t, i) => bell(t, 76 + i * 3, 0.06, -0.2 + i * 0.2, CHIME, 2.2),
+    side: (t, right) => whoosh(t - 0.2, 0.4, 0.08, 200, 1400, right ? 0.5 : -0.5, 0, "bell"),
+    count: (tv) => { for (let i = 0; i < 5; i++) tick(tv - 0.5 + i * 0.1, 1400 + i * 120, 0.03); bell(tv + 0.04, 84, 0.08, 0, CHIME, 2.6); },
+    slam: (ts) => { tom(ts, 0.2); sub(ts, ts + 1.0, 28, 0.3); bell(ts + 0.04, 76, 0.07, 0, CHIME, 2.6); },
+    punch: (tl) => bell(tl, 84, 0.08, 0, CHIME, 2.6),
+    type: (t0, t1) => types(t0, Math.max(3, Math.round((t1 - t0) / 0.1)), 0.1, 1500, 0.02),
+    message: (t, me) => tick(t, me ? 1600 : 1200, 0.04, me ? 0.3 : -0.3),
+    image: (t) => whoosh(t, 0.5, 0.08, 200, 1400, 0, 0, "bell"),
+    strike: (t) => whoosh(t - 0.05, 0.4, 0.1, 1800, 300, -0.4, 0.4, "fall"),
+    mark: (t) => [[0.0, 76], [0.18, 81], [0.36, 84], [0.6, 88]].forEach(([dt, m], j) => bell(t + dt, m, 0.08, -0.3 + j * 0.2, CHIME, 2.8)),
+    stamp: (t) => { tom(t, 0.18); bell(t + 0.03, 88, 0.08, 0, CHIME, 2.4); },
+  };
+  const K = KITS[profile.kit] ?? KITS.studio;
   const word = (s, t) => s.start + t;
   for (const s of S) {
-    const t = s.start;
-    if (s.enter === "slide") whoosh(t - 0.05, 0.34, 0.34, 500, 3200, 0.6, -0.6, "bell");
-    else if (s.enter === "flood") whoosh(t - 0.28, 0.3, 0.34, 300, 5000, -0.4, 0.4, "rise");
-    else if (s.enter === "dome") whoosh(t - 0.3, 0.32, 0.4, 120, 2600, 0, 0, "rise");
-    else if (s.enter === "zoom") whoosh(t - 0.02, 0.3, 0.34, 2800, 350, 0.5, -0.5, "fall");
-    // the headline: a tick on every word, a pop and a bell on the accent word
+    K.cut(s.start, s.enter);
+    // the headline: a sound on every word, another on the accent word
     const heads = [...(s.head ?? []), ...(s.wrongHead ?? []), ...(s.rightHead ?? [])];
-    heads.forEach((w, i) => {
-      if (w.emph) { pop(word(s, w.at), 620, 0.14); bell(word(s, w.at) + 0.03, 88 + (s.no % 3) * 2, 0.1, 0); }
-      else tick(word(s, w.at), 1500 + (i % 6) * 150, 0.06, -0.3 + (i % 5) * 0.15);
-    });
+    heads.forEach((w, i) => (w.emph ? K.accent(word(s, w.at), s.no) : K.word(word(s, w.at), i)));
     switch (s.type) {
       case "hook": case "text":
-        if (s.icon) { const ti = word(s, s.cues.icon); whoosh(ti - 0.08, 0.3, 0.16, 500, 3200, 0, 0, "bell"); pop(ti, 540, 0.16); bell(ti + 0.04, 91, 0.12, 0); tom(ti, 0.22); }
+        if (s.icon) K.icon(word(s, s.cues.icon));
         break;
-      case "list":
-        s.items.forEach((it, i) => { const ti = word(s, it.at); tom(ti, 0.22); pop(ti, 480 + i * 80, 0.14, -0.4 + i * 0.27); blip(ti + 0.03, mtof(PENTA[5 + i]), 0.08, -0.4 + i * 0.27); });
+      case "list": s.items.forEach((it, i) => K.land(word(s, it.at), i)); break;
+      case "checklist": s.items.forEach((it, i) => K.check(word(s, it.at), i)); break;
+      case "steps": s.items.forEach((it, i) => K.step(word(s, it.at), i)); break;
+      case "compare": K.side(word(s, s.cues.left), false); K.side(word(s, s.cues.right), true); break;
+      case "stat": K.count(word(s, s.cues.value)); break;
+      case "slam": K.slam(word(s, s.cues.slam)); note(word(s, s.cues.slam), "slam"); break;
+      case "punch": K.punch(word(s, s.cues.land)); break;
+      case "quote": K.type(word(s, s.cues.type), word(s, s.cues.typeEnd)); break;
+      case "chat": s.messages.forEach((m, i) => K.message(word(s, m.at), m.from === "me", i)); break;
+      case "image": K.image(s.start); break;
+      case "strike": K.strike(word(s, s.cues.strike)); break;
+      case "end":
+        K.mark(word(s, s.cues.mark), s.sub);
+        if (s.cues.stamp != null) { K.stamp(word(s, s.cues.stamp)); note(word(s, s.cues.stamp), "stamp"); }
         break;
-      case "checklist":
-        s.items.forEach((it, i) => { const ti = word(s, it.at); tick(ti, 2400 + i * 200, 0.15); pop(ti + 0.01, 700, 0.1); bell(ti + 0.04, [88, 91, 93, 96][i], 0.11, -0.3 + i * 0.2); });
-        break;
-      case "steps":
-        s.items.forEach((it, i) => { const ti = word(s, it.at); if (i) whoosh(ti - 0.3, 0.28, 0.1, 400, 2400, 0, 0, "rise"); pop(ti, 520 + i * 60, 0.14); blip(ti + 0.03, mtof(PENTA[4 + i]), 0.08); });
-        break;
-      case "compare": {
-        const tl = word(s, s.cues.left), tr = word(s, s.cues.right);
-        whoosh(tl - 0.1, 0.3, 0.2, 400, 2600, -0.7, 0, "bell"); tom(tl, 0.2);
-        whoosh(tr - 0.1, 0.3, 0.2, 400, 2600, 0.7, 0, "bell"); pop(tr - 0.12, 560, 0.15); tom(tr, 0.24); bell(tr + 0.04, 93, 0.11, 0.2);
-        break;
-      }
-      case "stat": {
-        const tv = word(s, s.cues.value);
-        for (let i = 0; i < 8; i++) tick(tv - 0.6 + i * 0.07, 2600 + i * 220, 0.06, i % 2 ? 0.3 : -0.3);
-        bell(tv + 0.06, 93, 0.14, 0); bell(tv + 0.12, 100, 0.1, 0.3);
-        [0.1, 0.18, 0.26, 0.34].forEach((dt, i) => blip(tv + dt, mtof(PENTA[7 + i]), 0.08, -0.5 + i * 0.35));
-        break;
-      }
-      case "slam": {
-        const ts = word(s, s.cues.slam);
-        impact(ts, 0.9); sub(ts, ts + 1.0, 28, 0.5); crash(ts, 0.5, HT);
-        note(ts, "slam");
-        break;
-      }
-      case "punch": {
-        const tl = word(s, s.cues.land);
-        clap(tl, 0.32); bell(tl + 0.05, 93, 0.12, 0);
-        break;
-      }
-      case "quote": {
-        const t0 = word(s, s.cues.type), t1 = word(s, s.cues.typeEnd);
-        pop(t0 - 0.25, 540, 0.12);
-        types(t0, Math.max(4, Math.round((t1 - t0) / 0.07)), 0.07, 2000, 0.035);
-        break;
-      }
-      case "chat":
-        s.messages.forEach((m, i) => { const tm = word(s, m.at); pop(tm, m.from === "me" ? 760 : 560, 0.15, m.from === "me" ? 0.4 : -0.4); blip(tm + 0.03, mtof(PENTA[(m.from === "me" ? 7 : 5) + (i % 2)]), 0.08, m.from === "me" ? 0.4 : -0.4); });
-        break;
-      case "image":
-        whoosh(t + 0.02, 0.3, 0.14, 500, 2600, 0, 0, "bell"); tick(t + 0.12, 3200, 0.12); pop(t + 0.14, 600, 0.1);
-        break;
-      case "strike": {
-        const tk = word(s, s.cues.strike);
-        whoosh(tk - 0.02, 0.26, 0.26, 2800, 500, -0.6, 0.6, "fall"); tick(tk, 1800, 0.12); tom(tk + 0.04, 0.18);
-        break;
-      }
-      case "end": {
-        const tm = word(s, s.cues.mark);
-        impact(tm, 0.45);
-        [[0.07, 81], [0.2, 88], [0.33, 93], [0.5, 95]].forEach(([dt, m], j) => bell(tm + dt, m, 0.12, -0.3 + j * 0.2, CHIME, 2.0));
-        if (s.sub) types(tm + 0.28, Math.min(24, s.sub.length), 0.035, 2100, 0.03);
-        if (s.cues.stamp != null) {
-          const tst = word(s, s.cues.stamp);
-          impact(tst, 0.6); crash(tst, 0.38, HT); sub(tst, tst + 0.9, 31, 0.4);
-          [0.04, 0.1, 0.16, 0.24, 0.32, 0.42].forEach((dt, i) => blip(tst + dt, mtof(PENTA[6 + i]), 0.07, -0.6 + i * 0.25));
-          note(tst, "stamp");
-        }
-        break;
-      }
     }
   }
 

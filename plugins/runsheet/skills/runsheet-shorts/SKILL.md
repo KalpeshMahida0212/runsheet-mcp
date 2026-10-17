@@ -1,6 +1,6 @@
 ---
 name: runsheet-shorts
-description: "Makes YouTube Shorts for the creator's channel and schedules them through Runsheet, start to finish with no questions. Reads the channel, picks topics, writes each script as scenes, and renders each Short on this computer as motion graphics: a voice, captions lit word by word, scenes that slide and flood in, cards and numbers that land on their words, music and sound effects. Checks the frames and schedules it into the next open days. It also cuts Shorts out of the creator's own long videos, with captions that follow the speech. Use when the user asks to make Shorts, fill the week or month with videos, automate their channel's Shorts, cut Shorts or clips from a long video, podcast or stream, or run the weekly Shorts job."
+description: "Makes YouTube Shorts for the creator's channel and schedules them through Runsheet, start to finish with no questions. Reads the channel, picks topics, writes each script as scenes, and renders each Short on this computer as motion graphics in the style the creator picks (Studio, Kinetic, Neon, Pop or Editorial): a voice, scenes that slide, wipe and flood in, type and cards and numbers that land on their words, music and sound effects. Checks the frames and schedules it into the next open days. It also cuts Shorts out of the creator's own long videos, with captions that follow the speech. Use when the user asks to make Shorts, fill the week or month with videos, automate their channel's Shorts, cut Shorts or clips from a long video, podcast or stream, or run the weekly Shorts job."
 ---
 
 # Runsheet Shorts: from the channel to a scheduled Short, by itself
@@ -11,23 +11,46 @@ required tool or file is missing. Your own model writes every word; nothing here
 ## Before the first run (check, fix, carry on)
 
 1. **Runsheet's tools.** You need `runsheet_get_channel`, `runsheet_get_library`, `runsheet_get_schedule`
-   and `runsheet_get_watchlist` (Runsheet's connector), and `runsheet_upload_video` (Runsheet's local
-   server, `npx -y runsheet-mcp`, with a `RUNSHEET_API_KEY` that has "Upload from this machine" ticked;
-   keys are made in Runsheet, Settings, API keys). If they are missing, say exactly that and stop.
+   and `runsheet_get_watchlist` (Runsheet's connector), and `runsheet_start_short` and
+   `runsheet_upload_video` (Runsheet's local server, `npx -y runsheet-mcp`, with a `RUNSHEET_API_KEY`
+   that has "Upload from this machine" ticked; keys are made in Runsheet, Settings, API keys). If they
+   are missing, say exactly that and stop.
 2. **The engine.** Node 20 or newer and Chrome or Edge. The first time, run
    `npm install --prefix "<this skill folder>/engine"` (it downloads ffmpeg once, about 80 MB). After
    that it needs nothing.
 3. **Settings.** Read `~/.runsheet-shorts.json` if it exists. If not, create it from the channel, with
    these defaults, and tell the creator once that it is there:
-   `{ "perWeek": 7, "time": "10:00", "timeZone": "<the creator's IANA zone>", "theme": "light",
-   "accent": "#ff4a36", "voice": "en-US-EmmaMultilingualNeural", "rate": "+8%", "music": "auto",
-   "folder": "~/Videos/Runsheet Shorts", "brand": "<channel name>", "handle": "<@handle if known>",
-   "logo": null, "topics": "<what the channel is about, one line>", "clips": null, "longVideos": null }`.
-   `accent` is the channel's colour if its branding has one. `logo` may name the channel's square logo
+   `{ "perWeek": 7, "time": "10:00", "timeZone": "<the creator's IANA zone>", "style": "studio",
+   "theme": "light", "accent": "#ff4a36", "voice": "en-US-EmmaMultilingualNeural", "rate": "+8%",
+   "music": "auto", "folder": "~/Videos/Runsheet Shorts", "brand": "<channel name>",
+   "handle": "<@handle if known>", "logo": null, "topics": "<what the channel is about, one line>",
+   "clips": null, "longVideos": null }`.
+   `style` is the look of every Short (the styles are below). When the creator names a style in their
+   request, use that one for this run. `accent` is the channel's color if its branding has one. `logo` may name the channel's square logo
    file. `music` is `auto` (music made for each Short), `none`, or the path of the creator's own track.
    `clips` may name a folder of the creator's own pictures or clips to show in `image` scenes.
    `topics` is what the channel is about, in one line. Fill it from the channel's own description
    and titles. `longVideos` may name a folder of the creator's own long videos to cut Shorts from.
+
+## The styles, and the pass every video needs
+
+| style | the look | plan |
+|---|---|---|
+| `studio` | Cream, ink or accent grounds, white cards, headlines that rise word by word, caption pills | Free |
+| `kinetic` | No captions: huge type stretched to the frame, slamming in word by word, wipes and hard hits | Paid |
+| `neon` | Dark and electric: a synthwave grid, glass panels, glowing type typed in, glitch cuts | Paid |
+| `pop` | Bright and playful: sticker cards with thick outlines, bouncy type, doodles and marker highlights | Paid |
+| `editorial` | A calm magazine page: big serif type set line by line, hairlines, numerals and whitespace | Paid |
+
+Every video, script or clip, needs its own pass from `runsheet_start_short`. A free Runsheet account
+makes one Short, ever, in `studio`. A paid plan makes its monthly number of Shorts in every style. A
+pass is good for two hours and six renders of that one video, which is room to check and fix it.
+
+- One pass is one video. Never render a second video on a pass.
+- If `runsheet_start_short` refuses, stop making videos. Tell the creator its words exactly, and what
+  was made before it.
+- Never change the engine, its files or the pass check to get around a refusal. The paid styles come
+  from Runsheet with the pass and are not in the engine.
 
 ## Working unattended
 
@@ -69,7 +92,7 @@ instead of `ls`, `which` or `cat`. The Write tool makes any folder it needs.
      mix from the other Shorts in this batch.
    - **The hook:** its `say` is 12 words or fewer and its `text` 7 or fewer: the tension or the promise.
    - **The ending:** the `end` scene's `say` pays it off or gives the next step, once.
-   - **Emphasis:** star one word or short phrase per headline (`*like this*`) for the accent colour.
+   - **Emphasis:** star one word or short phrase per headline (`*like this*`) for the accent color.
    - **The screen follows the voice:** on-screen words are words the voice says, so each one lands as
      it is spoken.
    - **Plain language:** short sentences, US English unless the channel speaks another language.
@@ -88,9 +111,11 @@ instead of `ls`, `which` or `cat`. The Write tool makes any folder it needs.
    - **Description:** two or three short lines, then three relevant hashtags.
    - **Tags:** 5 to 10.
 6. **Render.**
+   - **The pass:** call `runsheet_start_short` with the `style`, once for this video. If it refuses,
+     stop here (see the styles above).
    - Write `short.json` into a new folder `<folder>/<YYYY-MM-DD> <short-slug>/`: `title`, `brand`
-     (`name`, `handle`, `logo`), `theme`, `accent`, `voice`, `rate` and `music` from the settings, and
-     the `scenes`. For the `end` scene's `sub`, use the handle.
+     (`name`, `handle`, `logo`), `theme`, `accent`, `voice`, `rate` and `music` from the settings,
+     `style` and `pass`, and the `scenes`. For the `end` scene's `sub`, use the handle.
    - If `clips` is set, an `image` scene can show one of the creator's own pictures or clips.
    - Run `node "<this skill folder>/engine/render.mjs" short.json`. It prints a JSON summary with the
      paths of `short.mp4`, `cover.png` and `sheet.png`. A 30 second Short takes a minute or two.
@@ -125,8 +150,8 @@ signed in at that time. The `README.md` next to this file gives the exact comman
 
 ## Rules that never bend
 
-- Every Short has a voice-over, captions in step with it, music and sound effects. That is what the
-  engine makes.
+- Every Short has a voice-over, words on screen in step with it, music and sound effects. That is
+  what the engine makes, in every style.
 - No realistic fake people, events or places, and no imitation of a real person's voice. The engine
   draws type, cards and icons, and shows the creator's own footage, which needs no altered-content
   label on YouTube.

@@ -6,19 +6,22 @@ headline's words rise as they are said, a list's cards fly in on their own words
 So write the on-screen text with the same words the voice says.
 
 Under it all: music made for the video, a sound for every move (whooshes on the transitions, pops as cards land,
-ticks as boxes tick, an impact on a slam or a number), captions that light each word as it is spoken, and a camera
-that pushes in and jolts on the hits.
+ticks as boxes tick, an impact on a slam or a number) and a camera that pushes in and jolts on the hits.
+
+The same script works in every style (`"style"` in short.json): each draws the scene types its own way, with its own
+type, grounds, transitions, music and sounds. The descriptions below are Studio's. Kinetic shows no captions (its
+words are the picture); the others light each spoken word in captions of their own look.
 
 ## Every scene
 
 - `type`: one of the types below.
 - `say`: the voice-over line. One or two short sentences, 4 to 22 words.
-- `ground` (optional): `light` (cream), `dark` (ink) or `punch` (the accent colour, with rays). Left out, it is the
-  settings' theme; `stat` and `punch` are always `punch`.
+- `ground` (optional): `light`, `dark` or `punch` (the accent moment). In Studio: cream, ink, and the accent color
+  with rays. Left out, it is the settings' theme; `stat` and `punch` are always `punch`.
 - `enter` (optional): `slide`, `flood`, `dome`, `zoom` or `cut`. Left out, the engine picks the one that fits (a
   slide between light scenes, a flood into the accent, a dome into the dark).
-- A word in stars, `*like this*`, is drawn in the accent colour as a serif italic. One starred word or short phrase
-  in a headline.
+- A word in stars, `*like this*`, is drawn in the accent color (in Studio, as a serif italic). One starred word or
+  short phrase in a headline.
 
 ## The types
 
@@ -80,6 +83,8 @@ zap. Icons are Lucide's (ISC licence).
   "voice": "en-US-EmmaMultilingualNeural",
   "rate": "+8%",
   "music": "auto",
+  "style": "studio",
+  "pass": "<from runsheet_start_short>",
   "scenes": [
     { "type": "hook", "say": "You post when you remember. Here is a better week.", "text": "Post when you *remember?*", "kicker": "a better week", "icon": "calendar" },
     { "type": "strike", "say": "Not whenever you have time. On the same day, every week.", "wrong": "Whenever you have time", "right": "The same *day*, every week" },

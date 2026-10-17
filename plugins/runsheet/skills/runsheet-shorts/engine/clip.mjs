@@ -24,7 +24,8 @@
       "x": 0.42,                             crop only: where the vertical window sits, 0 the left edge, 1 the right
       "headline": "Why I *stopped* posting daily",   optional, at the top the whole time
       "accent": "#ff4d2e",
-      "out": "C:/Videos/Runsheet Shorts/2026-10-20 stopped-daily"
+      "out": "C:/Videos/Runsheet Shorts/2026-10-20 stopped-daily",
+      "pass": "..."                          this clip's pass, from runsheet_start_short (style "studio"): see lib/pass.mjs
     }
   Writes short.mp4 (1080x1920, 30 fps, H.264 and AAC, -14 LUFS), cover.png, sheet.png (captions across the clip,
   tiled, to check by eye) and timeline.json, then prints a JSON summary.
@@ -39,6 +40,7 @@ import { FFMPEG, ff, duration } from "./lib/ff.mjs";
 import { findBrowser } from "./lib/browser.mjs";
 import { align } from "./lib/align.mjs";
 import { windows, appendWindow, tidy, sentences, group } from "./lib/words.mjs";
+import { DEV, usePass, markMade } from "./lib/pass.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FPS = 30, W = 1080, H = 1920;
@@ -133,6 +135,7 @@ function readClip(path) {
     frame: s.frame === "fit" ? "fit" : "crop", x: Math.min(1, Math.max(0, Number(s.x ?? 0.5))),
     headline: s.headline ? String(s.headline).trim() : null,
     accent: /^#[0-9a-f]{6}$/i.test(s.accent || "") ? s.accent : "#ff4d2e",
+    pass: s.pass ? String(s.pass) : null,
   };
   if (!existsSync(c.source || "")) fail(`source not found: ${c.source}`);
   if (!existsSync(c.transcript || "")) fail(`transcript not found: ${c.transcript}. Run: node clip.mjs transcribe "${c.source}"`);
@@ -158,6 +161,7 @@ async function render(specPath) {
   const shown = align(C.text || inside.map((w) => w.text).join(" "), heard, len);
   const unheard = shown.filter((w) => !w.heard).length;
   const groups = group(shown);
+  if (!DEV) await usePass(C.pass, "studio").catch((e) => fail(e.message));
 
   mkdirSync(C.out, { recursive: true });
   const work = join(C.out, "work");
@@ -228,8 +232,10 @@ async function render(specPath) {
 
   const warnings = [];
   if (unheard > shown.length * 0.25) warnings.push(`${unheard} of ${shown.length} words on screen were not heard in the cut: the text should follow what is said, word for word.`);
+  const seconds = Number((await duration(video)).toFixed(2));
+  await markMade(C.pass, seconds);
   process.stdout.write(JSON.stringify({
-    ok: true, video, cover, sheet, seconds: Number((await duration(video)).toFixed(2)),
+    ok: true, video, cover, sheet, seconds,
     from: stamp(cutStart), to: stamp(cutEnd), captions: groups.length, wordsNotHeard: unheard, warnings,
     renderSeconds: Math.round((Date.now() - began) / 1000),
   }, null, 2) + "\n");
