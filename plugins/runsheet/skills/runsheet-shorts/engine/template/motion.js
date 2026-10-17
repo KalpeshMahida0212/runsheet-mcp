@@ -465,7 +465,7 @@
       return c;
     };
     const left = side(60, s.left, false), right = side(570, s.right, true);
-    const hgt = Math.max(420, left.offsetHeight, right.offsetHeight);
+    const hgt = Math.max(300, left.offsetHeight, right.offsetHeight);
     const top = zone(hgt, ti.below + 10);
     for (const c of [left, right]) { c.style.top = px(top); c.style.height = px(hgt); }
     if (top + hgt > 1300) problems.push(`scene ${s.no}: the two sides run into the captions. Use fewer or shorter lines.`);

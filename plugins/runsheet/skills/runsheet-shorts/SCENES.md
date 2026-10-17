@@ -46,6 +46,8 @@ that pushes in and jolts on the hits.
 - At most one `slam` and at most two accent scenes (`stat`, `punch`).
 - A `stat` only shows a number that is true: the channel's own data, or a plain fact the script states (a price, a
   count of steps). Never a statistic about other people.
+- A stamp or a kicker is a claim too: only what is true ("Free plan", the channel's real schedule if the settings
+  give it). Never a promise the channel has not made.
 - Keep the screen short: a headline is 7 words at most, a list item 5. The voice can say more than the screen shows,
   but the screen's words should be in what the voice says.
 - The `end` scene's `say` is the call to action, said once: follow, or where to go.

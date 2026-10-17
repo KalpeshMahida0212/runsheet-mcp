@@ -126,11 +126,14 @@ async function main() {
     }
   }));
 
-  // 6. the cover (the hook, settled) and every scene once it has settled, to check by eye
+  // 6. the cover: the hook once its confetti has settled, without the caption, for a clean thumbnail
   const hook = P.scenes[0];
-  await first.evaluate((x) => window.seek(x), hook.start + hook.settle);
+  const coverAt = hook.start + Math.min(hook.len - 0.15, Math.max(hook.settle, (hook.cues.icon ?? 0) + 1.6));
+  await first.evaluate(async (x) => { document.getElementById("caps").style.visibility = "hidden"; await window.seek(x); }, coverAt);
   const cover = join(S.out, "cover.png");
   await first.screenshot({ path: cover, type: "png" });
+  await first.evaluate(() => { document.getElementById("caps").style.visibility = ""; });
+  // and every scene once it has settled, to check by eye
   for (const f of readdirSync(work)) if (/^sheet-\d+\.jpg$/.test(f)) rmSync(join(work, f));
   for (const [i, s] of P.scenes.entries()) {
     await first.evaluate((x) => window.seek(x), s.start + s.settle);
