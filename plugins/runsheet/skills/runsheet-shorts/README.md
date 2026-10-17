@@ -48,7 +48,7 @@ the whole transcript, picks moments that stand on their own, frames a face or ke
 lights each caption word as it is said, checks the frames and schedules them like any other Short.
 `CLIPS.md` has the steps it follows.
 
-It needs one more install, once: `npm install` in `engine/stt` (about 470 MB). The speech model
+It needs one more install, once: `npm install --prefix engine/stt` (about 470 MB). The speech model
 downloads on the first run (about 290 MB). In testing, 7.5 minutes of video took about a minute to
 hear, and each clip about 90 seconds to render.
 
@@ -104,11 +104,12 @@ node render.mjs path/to/short.json
 The format of `short.json` is at the top of `engine/render.mjs`. It writes `short.mp4` (1080x1920,
 30 fps, -14 LUFS), `cover.png` and `sheet.png`, and prints a JSON summary.
 
-For clips from a long video (after `npm install` in `engine/stt`):
+For clips from a long video (after `npm install --prefix engine/stt`):
 
 ```
 node clip.mjs transcribe path/to/video.mp4 --out path/to/folder
 node clip.mjs render path/to/clip.json
 ```
 
-The format of `clip.json` is at the top of `engine/clip.mjs`.
+The format of `clip.json` is at the top of `engine/clip.mjs`. `npm test` in `engine` checks the word
+timing and caption logic in a second, with nothing to install.

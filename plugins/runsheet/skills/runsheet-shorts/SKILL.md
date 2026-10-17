@@ -14,8 +14,9 @@ required tool or file is missing. Your own model writes every word; nothing here
    and `runsheet_get_watchlist` (Runsheet's connector), and `runsheet_upload_video` (Runsheet's local
    server, `npx -y runsheet-mcp`, with a `RUNSHEET_API_KEY` that has "Upload from this machine" ticked;
    keys are made in Runsheet, Settings, API keys). If they are missing, say exactly that and stop.
-2. **The engine.** Node 20 or newer and Chrome or Edge. The first time, run `npm install` in this
-   skill's `engine` folder (it downloads ffmpeg once, about 80 MB). After that it needs nothing.
+2. **The engine.** Node 20 or newer and Chrome or Edge. The first time, run
+   `npm install --prefix "<this skill folder>/engine"` (it downloads ffmpeg once, about 80 MB). After
+   that it needs nothing.
 3. **Settings.** Read `~/.runsheet-shorts.json` if it exists. If not, create it from the channel, with
    these defaults, and tell the creator once that it is there:
    `{ "perWeek": 7, "time": "10:00", "timeZone": "<the creator's IANA zone>", "theme": "dark",
@@ -101,7 +102,8 @@ instead of `ls`, `which` or `cat`. The Write tool makes any folder it needs.
    - `publish_at`: the slot as an ISO time with its offset,
    - `thumbnail_path`: `cover.png`.
    If Runsheet refuses (a plan limit, YouTube's daily limit), stop there and report what was done.
-9. **Report.** A short table: day, time, title. Then one line: any of them can be pulled before it
+9. **Report.** A short table: date (YYYY-MM-DD), time, title. Leave weekdays out unless you worked them
+   out with `node`; a weekday guessed from a date is often wrong. Then one line: any of them can be pulled before it
    goes live from Runsheet's schedule, or by asking you (`runsheet_delete_video` or
    `runsheet_schedule_video` with no time).
 

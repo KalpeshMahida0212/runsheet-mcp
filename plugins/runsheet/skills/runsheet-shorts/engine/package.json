@@ -8,6 +8,9 @@
   "engines": {
     "node": ">=20"
   },
+  "scripts": {
+    "test": "node test.mjs"
+  },
   "dependencies": {
     "ffmpeg-static": "5.2.0",
     "msedge-tts": "2.1.0",

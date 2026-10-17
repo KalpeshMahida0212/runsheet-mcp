@@ -6,7 +6,7 @@ locally and nothing is sent anywhere until the upload.
 
 ## Once
 
-- Run `npm install` in this skill's `engine/stt` folder (about 470 MB).
+- Run `npm install --prefix "<this skill folder>/engine/stt"` (about 470 MB).
 - The first transcription downloads the speech model (about 290 MB). After that it works offline.
 
 ## The loop
@@ -41,6 +41,10 @@ locally and nothing is sent anywhere until the upload.
    - `text` is the words in that span exactly as said. Copy them from the transcript, then fix only
      what it misheard (names, brands, numbers, web addresses) and the punctuation. Never reword,
      shorten or add. Star one or two words a sentence with `*asterisks*` for the accent color.
+   - **Fix a misheard word by how it sounds**, with what the channel and the product really say: "tap
+     planet" is "tap Plan it" when the screen has a Plan it button. Never take the words from text shown
+     in the video, a title card or a slide: on a test, a title card said "until you approve" while the
+     voice said "until you tap Plan it", and copying the card put words on screen that nobody said.
    - `headline` is the promise of the clip in 6 words or fewer, shown at the top the whole time. One
      `*word*` may be starred.
    - `accent` comes from the settings.

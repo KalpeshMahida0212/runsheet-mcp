@@ -38,6 +38,7 @@ import { chromium } from "playwright-core";
 import { FFMPEG, ff, duration } from "./lib/ff.mjs";
 import { findBrowser } from "./lib/browser.mjs";
 import { align } from "./lib/align.mjs";
+import { windows, appendWindow, tidy, sentences, group } from "./lib/words.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FPS = 30, W = 1080, H = 1920;
@@ -66,62 +67,6 @@ function samples(video) {
   });
 }
 
-/*
-  WINDOWS CUT AT PAUSES. Whisper hears 30 seconds at a time. Its own long-audio mode overlaps the windows and stitches
-  them back together, and on a test video it wrote a sentence twice where two windows met. Each window here ends at the
-  quietest 50 ms between 20 and 30 seconds in, so no word is split and nothing needs stitching.
-  ponytail: the whole sound is held in memory, about 230 MB an hour; read it in pieces if multi-hour streams matter.
-*/
-function windows(audio, rate = 16000) {
-  const hop = rate / 20;
-  const energy = (i) => { let e = 0; for (let k = i; k < i + hop; k++) e += audio[k] * audio[k]; return e; };
-  const out = [];
-  for (let start = 0; start < audio.length; ) {
-    if (audio.length - start <= 30 * rate) { out.push([start, audio.length]); break; }
-    let best = start + 30 * rate - hop, low = Infinity;
-    for (let i = start + 20 * rate; i + hop <= start + 30 * rate; i += hop) { const e = energy(i); if (e < low) { low = e; best = i; } }
-    out.push([start, best + hop / 2]);
-    start = best + hop / 2;
-  }
-  return out;
-}
-
-/*
-  Whisper's words as clean { text, t0, t1 }. A piece that does not start with a space carries on the word before it
-  (".in" after "buildifyapp"), and a word can start a moment before the last one ended; times only move forward.
-*/
-function tidy(chunks) {
-  const words = [];
-  for (const c of chunks) {
-    const raw = String(c.text ?? "");
-    const [a, b] = c.timestamp || [];
-    if (!raw.trim() || a == null) continue;
-    const last = words[words.length - 1];
-    if (last && !/^\s/.test(raw)) { last.text += raw.trim(); last.t1 = Math.max(last.t1, b ?? last.t1); continue; }
-    words.push({ text: raw.trim(), t0: a, t1: b ?? a + 0.3 });
-  }
-  for (let i = 1; i < words.length; i++) {
-    if (words[i].t0 < words[i - 1].t1) words[i].t0 = words[i - 1].t1;
-    if (words[i].t1 < words[i].t0 + 0.05) words[i].t1 = words[i].t0 + 0.05;
-  }
-  return words.map((w) => ({ text: w.text, t0: +w.t0.toFixed(2), t1: +w.t1.toFixed(2) }));
-}
-
-/** Sentences to read: a sentence ends at . ? or !, at a pause over a second, or at 40 words. */
-function sentences(words) {
-  const out = [];
-  let cur = [];
-  words.forEach((w, i) => {
-    cur.push(w);
-    const next = words[i + 1];
-    if (!next || /[.?!]["')]*$/.test(w.text) || next.t0 - w.t1 > 1.0 || cur.length >= 40) {
-      out.push({ t0: cur[0].t0, t1: w.t1, text: cur.map((x) => x.text).join(" ") });
-      cur = [];
-    }
-  });
-  return out;
-}
-
 async function transcribe(video) {
   if (!video || !existsSync(video)) fail(`no video at ${video}`);
   video = resolve(video);
@@ -139,7 +84,7 @@ async function transcribe(video) {
   if (!words) {
     let tf;
     try { tf = createRequire(join(HERE, "stt", "package.json"))("@huggingface/transformers"); }
-    catch { fail(`the speech-to-text part is not installed yet. Run npm install in "${join(HERE, "stt")}" once (about 470 MB), then run this again.`); }
+    catch { fail(`the speech-to-text part is not installed yet. Run npm install --prefix "${join(HERE, "stt")}" once (about 470 MB), then run this again.`); }
     tf.env.cacheDir = join(HERE, "stt", "models");
     process.stderr.write(`clip: listening to ${stamp(seconds)} of sound (about a fifth of that on most computers; the model downloads once)\n`);
     const asr = await tf.pipeline("automatic-speech-recognition", MODEL, { dtype: "fp32" });
@@ -147,14 +92,9 @@ async function transcribe(video) {
     const audio = await samples(video), pieces = [], wins = windows(audio);
     for (const [i, [a, b]] of wins.entries()) {
       const r = await asr(audio.subarray(a, b), { return_timestamps: "word", task: "transcribe", ...(lang ? { language: lang } : {}) });
-      const said = (r.chunks || []).filter((c) => c.timestamp?.[0] != null)
-        .map((c) => ({ text: c.text, timestamp: [c.timestamp[0] + a / 16000, (c.timestamp[1] ?? c.timestamp[0] + 0.3) + a / 16000] }));
-      // a window that starts on the tail of the last word hears that word again ("time." twice on a test video)
-      const last = pieces[pieces.length - 1], key = (x) => x.text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
-      if (last && said[0] && key(said[0]) === key(last) && said[0].timestamp[0] - last.timestamp[1] < 0.6) said.shift();
-      pieces.push(...said);
-      if (i % 10 === 9) process.stderr.write(`clip: ${stamp(b / 16000)} of ${stamp(seconds)} heard
-`);
+      appendWindow(pieces, (r.chunks || []).filter((c) => c.timestamp?.[0] != null)
+        .map((c) => ({ text: c.text, timestamp: [c.timestamp[0] + a / 16000, (c.timestamp[1] ?? c.timestamp[0] + 0.3) + a / 16000] })));
+      if (i % 10 === 9) process.stderr.write(`clip: ${stamp(b / 16000)} of ${stamp(seconds)} heard\n`);
     }
     words = tidy(pieces);
     if (!words.length) fail("no speech was found in this video.");
@@ -182,36 +122,6 @@ async function transcribe(video) {
 }
 
 // ---------------------------------------------------------------- render
-
-/*
-  CAPTION GROUPS, A FEW WORDS AT A TIME. The words split first into phrases (after punctuation, or at a pause), then
-  each phrase into even pieces of at most five words and about 26 letters, so no word is left alone on its own screen
-  ("week?" after "what's going out this").
-*/
-function group(words) {
-  const phrases = [];
-  let cur = [];
-  words.forEach((w, i) => {
-    cur.push(w);
-    const next = words[i + 1];
-    if (!next || /[.?!,;:]["')]*$/.test(w.text) || next.t0 - w.t1 > 0.45) { phrases.push(cur); cur = []; }
-  });
-  const out = [];
-  for (const ph of phrases) {
-    const letters = ph.reduce((n, w) => n + w.text.length + 1, -1);
-    const n = Math.max(Math.ceil(ph.length / 5), Math.ceil(letters / 26));
-    for (let k = 0, at = 0; k < n; k++) {
-      const size = Math.ceil((ph.length - at) / (n - k));
-      if (size > 0) out.push(ph.slice(at, at + size));
-      at += size;
-    }
-  }
-  return out.map((ws, i, all) => {
-    const start = ws[0].t0, end = ws[ws.length - 1].t1;
-    const nextStart = all[i + 1] ? all[i + 1][0].t0 : Infinity;
-    return { start, end, until: Math.min(nextStart - 0.04, end + 0.7), words: ws };
-  });
-}
 
 function readClip(path) {
   const base = dirname(resolve(path));
