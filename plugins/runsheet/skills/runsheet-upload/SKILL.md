@@ -65,7 +65,8 @@ Run each shell command on its own, with no `&&`, `;` or pipes. Look around with 
      video, under 500 characters in all.
 5. **Make the thumbnail.**
    - From `frames.png`, choose the moment with one clear subject: a face with a strong expression, or the
-     result the video promises. Not a frame that already has text on it.
+     result the video promises. Not a frame that already has text on it, and never one that shows anything
+     private: an email address, a key, a phone number, a customer's name. Screen recordings show these often.
    - Run `node "<engine>/watch.mjs" frame "<video>" <seconds> "<watch folder>/frame.jpg"` and look at it.
    - Write `thumb.json` in the watch folder: `image`, `text` (three to five words that add to the title rather
      than repeat it, one `*word*` starred for the accent), `accent` from the settings, `side` (left or right:
@@ -86,7 +87,7 @@ Run each shell command on its own, with no `&&`, `;` or pipes. Look around with 
 8. **Keep a record.** Write `metadata.json` in the watch folder: the title, description, tags, chapters,
    thumbnail path and, once uploaded, the video's id and time.
 9. **Report.** For each video: the title, its publish time (YYYY-MM-DD HH:MM and the zone) or "private draft",
-   and one line on why that title. Leave weekdays out unless you worked them out with `node`. Add a line when
+   and one line on why that title. Write it with commas and periods: no em dashes, here either. Leave weekdays out unless you worked them out with `node`. Add a line when
    one applies:
    - The uploader marks every video "not made for kids". If this one is made for kids, the creator changes it in
      Studio before it goes out.
