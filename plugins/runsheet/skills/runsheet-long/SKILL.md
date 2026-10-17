@@ -1,6 +1,6 @@
 ---
 name: runsheet-long
-description: "Makes a long YouTube video (16:9, three to ten minutes) from scratch on the creator's computer and schedules it through Runsheet: picks the topic from the channel, writes the script as scenes in chapters, renders it as motion graphics in the style the creator picks (a voice-over, music, sound effects, the chapters made automatically), writes the title, description, tags and thumbnail by YouTube's own rules, and schedules it. Use when the user asks for a long video, a regular YouTube video rather than a Short, an explainer, a tutorial or a video essay made for them, or to fill their week's long video."
+description: "Makes a long YouTube video (16:9, up to ten minutes) from scratch on the creator's computer and schedules it through Runsheet: picks the topic from the channel, writes the script as scenes in chapters, renders it as motion graphics in the style the creator picks (a voice-over, music, sound effects, the chapters made automatically), writes the title, description, tags and thumbnail by YouTube's own rules, and schedules it. Use when the user asks for a long video, a regular YouTube video rather than a Short, an explainer, a tutorial or a video essay made for them, or to fill their week's long video."
 ---
 
 # Make a long video from scratch, then schedule it

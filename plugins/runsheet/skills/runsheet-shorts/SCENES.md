@@ -48,7 +48,7 @@ words are the picture); the others light each spoken word in captions of their o
 The same engine makes long videos: put `"shape": "16x9"` in the spec. Each style lays every scene out for the wide
 frame. A long video:
 
-- runs 40 to 100 scenes, three to ten minutes, and writes `video.mp4` (1920x1080) instead of `short.mp4`;
+- runs 40 to 100 scenes, up to ten minutes, and writes `video.mp4` (1920x1080) instead of `short.mp4`;
 - opens each part with a `chapter` scene. The renderer turns them into `chapters.txt` in YouTube's format, at their
   exact times: the opening is folded into the first chapter when it is under ten seconds, and the summary says when
   YouTube would ignore the list (fewer than three chapters, or one under ten seconds);

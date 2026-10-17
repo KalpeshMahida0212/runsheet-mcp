@@ -11,7 +11,7 @@ npx -y runsheet-mcp
 Published on npm as [`runsheet-mcp`](https://www.npmjs.com/package/runsheet-mcp). No install step,
 no dependencies, Node 20 or newer.
 
-## Claude makes your Shorts: the Claude Code plugin
+## Claude makes your videos: the Claude Code plugin
 
 This repository is also a Claude Code plugin marketplace. The `runsheet` plugin wires this server in
 and adds six skills your own Claude runs:
@@ -19,7 +19,7 @@ and adds six skills your own Claude runs:
 | Skill | What it does |
 |---|---|
 | `runsheet-shorts` | Makes YouTube Shorts on your computer as motion graphics, in one of five styles, with a voice, music and sound, and schedules them |
-| `runsheet-long` | Makes a long video (16:9, three to ten minutes) from scratch, with chapters, in your style, and schedules it |
+| `runsheet-long` | Makes a long video (16:9, up to ten minutes) from scratch, with chapters, in your style, and schedules it |
 | `runsheet-upload` | Watches a video you made (on your computer), writes its title, description, chapters, tags and thumbnail from what is in it, and schedules it |
 | `runsheet-plan` | Plans your next weeks from your own channel |
 | `runsheet-write` | Writes and saves titles, descriptions, tags, chapters, translations and posts |
@@ -30,8 +30,8 @@ and adds six skills your own Claude runs:
 /plugin install runsheet@runsheet
 ```
 
-Paste a Runsheet API key when it asks, then say "Fill next week's Shorts". It can run every week with
-no one there; see [plugins/runsheet/skills/runsheet-shorts](plugins/runsheet/skills/runsheet-shorts).
+Paste a Runsheet API key when it asks, then say "Fill next week's Shorts" or "Make a five minute video
+on how I plan my week". It can run every week with no one there; see [plugins/runsheet/skills/runsheet-shorts](plugins/runsheet/skills/runsheet-shorts).
 More at https://runsheet.buildifyapp.in/claude.
 
 ## What it does

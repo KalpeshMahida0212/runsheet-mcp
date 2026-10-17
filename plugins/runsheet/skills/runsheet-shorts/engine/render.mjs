@@ -262,6 +262,8 @@ async function main() {
   await ff(["-f", "concat", "-safe", "0", "-i", list, "-i", mix, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", video]);
   rmSync(segDir, { recursive: true, force: true });
   rmSync(join(work, "style"), { recursive: true, force: true });
+  // the mix and the sheet frames are made again on every render, and a ten minute mix is over 200 MB
+  for (const f of readdirSync(work)) if (/^(mix(-raw)?\.wav|sheet-\d+\.jpg)$/.test(f)) rmSync(join(work, f));
 
   // 8. the captions as a file for YouTube, and a long video's chapters in YouTube's format
   const srtClock = (t) => { const ms = Math.max(0, Math.round(t * 1000)); return `${String(Math.floor(ms / 3600000)).padStart(2, "0")}:${String(Math.floor(ms / 60000) % 60).padStart(2, "0")}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`; };

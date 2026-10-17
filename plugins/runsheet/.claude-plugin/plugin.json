@@ -1,6 +1,6 @@
 {
   "name": "runsheet",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Runsheet for Claude: your Claude makes YouTube Shorts and long videos on your own computer, in the style you pick, and schedules them, watches the videos you made yourself and writes their titles, descriptions, chapters and thumbnails, plans your next weeks from your channel, writes and saves titles, descriptions and translations, and reviews what worked. Your Claude does the writing; Runsheet supplies the channel's data and does the uploading and scheduling.",
   "author": { "name": "Kalpesh Mahida", "url": "https://runsheet.buildifyapp.in" },
   "homepage": "https://runsheet.buildifyapp.in/claude",

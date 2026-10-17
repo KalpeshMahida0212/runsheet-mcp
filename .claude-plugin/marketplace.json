@@ -9,7 +9,7 @@
     {
       "name": "runsheet",
       "source": "./plugins/runsheet",
-      "description": "Your Claude makes YouTube Shorts and schedules them with Runsheet, plans your weeks, writes your copy and reviews your channel."
+      "description": "Your Claude makes YouTube Shorts and long videos and schedules them with Runsheet, plans your weeks, writes your copy and reviews your channel."
     }
   ]
 }
