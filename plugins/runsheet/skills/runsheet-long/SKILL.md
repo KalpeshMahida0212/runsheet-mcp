@@ -45,7 +45,8 @@ Run each shell command on its own, with no `&&`, `;` or pipes. Look around with 
    Runsheet's brief (the hook, the beats, the outro). Write the whole narration from it:
    - **Length:** `longMinutes` at about 150 spoken words a minute (five minutes is about 750 words).
    - **The first fifteen seconds** state the promise and why to stay to the end. No greeting, no channel intro.
-   - **Chapters:** three to six parts, each opened by a chapter card, each one idea a viewer could skip to.
+   - **Chapters:** three to six parts, each opened by a chapter card, each one idea a viewer could skip to. Name
+     each in sentence case, the way a viewer would search it: "Find your rhythm", not "Find Your Rhythm".
    - **Keep them watching:** something new on screen every few seconds (every scene is one line), a question opened
      at the start and answered at the end, and a change of pace at every chapter.
    - **Original:** the channel's own angle, examples and opinions. Never a generic summary anyone could make; never
