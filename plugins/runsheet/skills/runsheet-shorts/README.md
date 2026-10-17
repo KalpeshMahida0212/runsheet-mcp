@@ -22,8 +22,17 @@ Your Claude does all the writing. Runsheet supplies your channel's data, uploads
    Paste the key when it asks. Installed from a shell instead, set it with `/plugin configure runsheet`.
 3. Ask: **"Fill next week's Shorts."**
 
-It needs Node 20 or newer and Chrome or Edge. The first run installs the engine's three packages
-(ffmpeg, the voice client and the browser driver), about 80 MB, once.
+It needs Node 20 or newer and Chrome or Edge. Before the first video of each kind, Claude runs
+`node engine/preflight.mjs shorts` (or `clips`, or `watch <video>`), which lists only what that job needs
+and is missing, and installs just that:
+
+| Job | Installs once |
+|---|---|
+| A Short from a script | the engine: ffmpeg, the browser driver and the voice, about 90 MB |
+| Shorts cut from a long video | the engine, plus the speech part: about 470 MB, and its model on the first listen, about 290 MB |
+| Watching a finished video to write its copy | the engine, plus the speech part only when the video has a sound track |
+
+Nothing else is downloaded: the frames are drawn in your own Chrome or Edge.
 
 ## Settings
 
@@ -73,9 +82,23 @@ the whole transcript, picks moments that stand on their own, frames a face or ke
 lights each caption word as it is said, checks the frames and schedules them like any other Short.
 `CLIPS.md` has the steps it follows.
 
-It needs one more install, once: `npm install --prefix engine/stt` (about 470 MB). The speech model
-downloads on the first run (about 290 MB). In testing, 7.5 minutes of video took about a minute to
-hear, and each clip about 90 seconds to render.
+It needs the speech part, once, which `node engine/preflight.mjs clips` asks for: about 470 MB, and the
+speech model downloads on the first run (about 290 MB). In testing, 7.5 minutes of video took about a
+minute to hear, and each clip about 90 seconds to render.
+
+## Videos you made yourself
+
+Give Claude a finished video ("Upload episode-12.mp4 for Thursday at 6pm") and the `runsheet-upload` skill
+watches it first, on your computer: it hears every word with its time and looks at frames from across it.
+Then it writes the title, the description with chapters at the real moments, tags and hashtags by
+YouTube's own rules (`../runsheet-write/YOUTUBE.md`), makes a thumbnail from the best frame, and
+schedules it. In testing, an 8 minute talk-over screen recording took about a minute to hear.
+
+```
+node engine/watch.mjs look path/to/video.mp4                   transcript, frames and the video's shape
+node engine/watch.mjs frame path/to/video.mp4 312 frame.jpg    one full size frame
+node engine/watch.mjs thumb thumb.json                         a thumbnail from a frame and a few words
+```
 
 ## Every week, with no one there
 
@@ -122,7 +145,9 @@ It runs on your computer while the app is open and the computer is awake.
 ## The engine on its own
 
 ```
-cd engine && npm install
+cd engine
+node preflight.mjs shorts
+npm install
 node render.mjs path/to/short.json
 ```
 
@@ -133,7 +158,7 @@ Everything in the picture and the sound is made in code: the fonts (Inter Tight,
 JetBrains Mono, Instrument Sans, and each paid style's own) and the icons (Lucide) are open-licensed, and
 the music and effects are synthesized, so a Short can be published anywhere.
 
-For clips from a long video (after `npm install --prefix engine/stt`):
+For clips from a long video (after `node engine/preflight.mjs clips` and what it lists):
 
 ```
 node clip.mjs transcribe path/to/video.mp4 --out path/to/folder

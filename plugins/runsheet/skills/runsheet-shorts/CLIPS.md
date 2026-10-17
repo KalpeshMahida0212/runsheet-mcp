@@ -6,8 +6,9 @@ locally and nothing is sent anywhere until the upload.
 
 ## Once
 
-- Run `npm install --prefix "<this skill folder>/engine/stt"` (about 470 MB).
-- The first transcription downloads the speech model (about 290 MB). After that it works offline.
+- Run `node "<this skill folder>/engine/preflight.mjs" clips`. On top of what a Short needs, it asks for
+  the speech part (about 470 MB, plus the model it downloads on its first listen, about 290 MB), with the
+  command to install it. Run what it lists, then the check again. After that it works offline.
 
 ## The loop
 

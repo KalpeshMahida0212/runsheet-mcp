@@ -17,10 +17,11 @@ it before you write anything. Runsheet's brief tools hand the same rules over wi
    brief tools `runsheet_generate_titles`, `runsheet_generate_description`, `runsheet_generate_tags` and
    `runsheet_generate_chapters`, and `runsheet_upload_video` and `runsheet_list_local_videos` (Runsheet's local
    server, with a key that has "Upload from this machine" ticked). If they are missing, say exactly that and stop.
-2. **The engine** is the `engine` folder of the `runsheet-shorts` skill next to this one. The first time, run
-   `npm install --prefix "<that engine folder>"` (ffmpeg, about 80 MB) and
-   `npm install --prefix "<that engine folder>/stt"` (the speech model's runtime, about 470 MB; the model itself,
-   about 290 MB, downloads on the first listen). After that it works offline.
+2. **The engine** is the `engine` folder of the `runsheet-shorts` skill next to this one. Before the first
+   video, run `node "<engine>/preflight.mjs" watch "<video>"`. It lists only what watching this video needs
+   that the computer does not have yet, with the command for each: the engine (about 90 MB), and the speech
+   part (about 760 MB with its model) only when the video has a sound track. Run what it lists, then the check
+   again, until it says everything is here.
 3. **Settings.** Read `~/.runsheet-shorts.json` if it exists, for `timeZone`, `time`, `accent` and `links` (the
    lines the creator wants at the foot of every long video's description). Without it, use the creator's time
    zone, 10:00, `#ff4a36` and no links.

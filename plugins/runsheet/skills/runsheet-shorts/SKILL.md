@@ -15,9 +15,10 @@ required tool or file is missing. Your own model writes every word; nothing here
    `runsheet_upload_video` (Runsheet's local server, `npx -y runsheet-mcp`, with a `RUNSHEET_API_KEY`
    that has "Upload from this machine" ticked; keys are made in Runsheet, Settings, API keys). If they
    are missing, say exactly that and stop.
-2. **The engine.** Node 20 or newer and Chrome or Edge. The first time, run
-   `npm install --prefix "<this skill folder>/engine"` (it downloads ffmpeg once, about 80 MB). After
-   that it needs nothing.
+2. **The engine.** Run `node "<this skill folder>/engine/preflight.mjs" shorts`. It checks Node, Chrome
+   or Edge and the engine, and lists only what making a Short needs that this computer does not have yet,
+   with the one command for each (the engine is about 90 MB, once). Run those commands, then the check
+   again, until it says everything is here. It never asks for the speech part, which only clips need.
 3. **Settings.** Read `~/.runsheet-shorts.json` if it exists. If not, create it from the channel, with
    these defaults, and tell the creator once that it is there:
    `{ "perWeek": 7, "time": "10:00", "timeZone": "<the creator's IANA zone>", "style": "studio",
