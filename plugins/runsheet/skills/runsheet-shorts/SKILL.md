@@ -12,7 +12,7 @@ required tool or file is missing. Your own model writes every word; nothing here
 
 1. **Runsheet's tools.** You need `runsheet_get_channel`, `runsheet_get_library`, `runsheet_get_schedule`
    and `runsheet_get_watchlist` (Runsheet's connector), and `runsheet_start_video` and
-   `runsheet_upload_video` (Runsheet's local server, `npx -y runsheet-mcp`, with a `RUNSHEET_API_KEY`
+   `runsheet_upload_video` (Runsheet's local server, which this plugin starts, with a `RUNSHEET_API_KEY`
    that has "Upload from this machine" ticked; keys are made in Runsheet, Settings, API keys). If they
    are missing, say exactly that and stop.
 2. **The engine.** Run `node "<this skill folder>/engine/preflight.mjs" shorts`. It checks Node, Chrome

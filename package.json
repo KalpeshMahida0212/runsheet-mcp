@@ -10,7 +10,8 @@
     "runsheet-mcp": "src/index.mjs"
   },
   "scripts": {
-    "build": "node -e \"console.log('runsheet-mcp: plain Node, nothing to build')\""
+    "build": "node -e \"console.log('runsheet-mcp: plain Node, nothing to build')\"",
+    "prepublishOnly": "node -e \"const r=(f)=>require('fs').readFileSync(f,'utf8').split(String.fromCharCode(13)).join('');if(r('src/index.mjs')!==r('plugins/runsheet/server/index.mjs'))throw new Error('The plugin runs its own copy of the server: copy src/index.mjs to plugins/runsheet/server/index.mjs and bump the plugin version.')\""
   },
   "files": [
     "src",

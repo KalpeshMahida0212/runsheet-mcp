@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "runsheet": {
-      "command": "npx",
-      "args": ["-y", "runsheet-mcp"],
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/index.mjs"],
       "env": { "RUNSHEET_API_KEY": "${user_config.runsheet_api_key}" }
     }
   }

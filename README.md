@@ -13,8 +13,9 @@ no dependencies, Node 20 or newer.
 
 ## Claude makes your videos: the Claude Code plugin
 
-This repository is also a Claude Code plugin marketplace. The `runsheet` plugin wires this server in
-and adds six skills your own Claude runs:
+This repository is also a Claude Code plugin marketplace. The `runsheet` plugin carries its own copy of
+this server, started with `node` so it is up at once (no npm lookup), and adds six skills your own
+Claude runs:
 
 | Skill | What it does |
 |---|---|
