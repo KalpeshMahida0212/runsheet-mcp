@@ -1,6 +1,6 @@
 # runsheet-mcp
 
-The local MCP server for [Runsheet](https://runsheet.buildifyapp.in), a YouTube scheduling app.
+The local MCP server for [Runsheet](https://runsheet.buildifyapp.in), the YouTube autopilot.
 It connects Claude, Cursor or any MCP client to your YouTube channel, and uploads videos from your
 own machine straight to YouTube.
 

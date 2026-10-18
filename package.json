@@ -1,7 +1,7 @@
 {
   "name": "runsheet-mcp",
   "version": "1.0.3",
-  "description": "Runsheet's local MCP server. Uploads videos from your own machine straight to YouTube and schedules them, and forwards the rest of Runsheet's YouTube toolkit to Claude, Cursor or any MCP client.",
+  "description": "Runsheet's local MCP server, for the YouTube autopilot. Uploads videos from your own machine straight to YouTube and schedules them, and forwards the rest of Runsheet's YouTube toolkit to Claude, Cursor or any MCP client.",
   "license": "MIT",
   "author": "Kalpesh Mahida",
   "type": "module",
@@ -40,6 +40,7 @@
     "cursor",
     "upload",
     "scheduler",
+    "autopilot",
     "runsheet"
   ]
 }

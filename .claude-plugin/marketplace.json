@@ -1,6 +1,6 @@
 {
   "name": "runsheet",
-  "description": "Runsheet, the YouTube scheduler: plugins that let Claude make, plan, write and schedule videos for your channel.",
+  "description": "Runsheet, the YouTube autopilot: plugins that let Claude plan, make, write and schedule videos for your channel.",
   "owner": {
     "name": "Kalpesh Mahida",
     "url": "https://runsheet.buildifyapp.in"

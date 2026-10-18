@@ -1,12 +1,12 @@
 {
   "name": "runsheet",
-  "version": "1.5.2",
-  "description": "Runsheet for Claude: your Claude makes YouTube Shorts and long videos on your own computer, in the style you pick, and schedules them, watches the videos you made yourself and writes their titles, descriptions, chapters and thumbnails, plans your next weeks from your channel, writes and saves titles, descriptions and translations, and reviews what worked. Your Claude does the writing; Runsheet supplies the channel's data and does the uploading and scheduling.",
+  "version": "1.5.3",
+  "description": "Runsheet, the YouTube autopilot, for Claude: your Claude makes YouTube Shorts and long videos on your own computer, in the style you pick, and schedules them, watches the videos you made yourself and writes their titles, descriptions, chapters and thumbnails, plans your next weeks from your channel, writes and saves titles, descriptions and translations, and reviews what worked. Your Claude does the writing; Runsheet supplies the channel's data and does the uploading and scheduling.",
   "author": { "name": "Kalpesh Mahida", "url": "https://runsheet.buildifyapp.in" },
   "homepage": "https://runsheet.buildifyapp.in/claude",
   "repository": "https://github.com/KalpeshMahida0212/runsheet-mcp",
   "license": "MIT",
-  "keywords": ["youtube", "shorts", "scheduler", "video", "runsheet", "mcp"],
+  "keywords": ["youtube", "autopilot", "shorts", "scheduler", "video", "runsheet", "mcp"],
   "userConfig": {
     "runsheet_api_key": {
       "type": "string",
