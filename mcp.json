@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "runsheet": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "runsheet-mcp"
+      ],
+      "env": {
+        "RUNSHEET_API_KEY": "rsk_live_..."
+      }
+    }
+  }
+}
