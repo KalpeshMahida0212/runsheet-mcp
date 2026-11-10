@@ -10,8 +10,8 @@ Your Claude does all the writing. Runsheet supplies your channel's data, uploads
 
 ## Install
 
-1. In Runsheet, open Settings, API keys, and make a key with **Read**, **Write**, **Write copy** and
-   **Upload from this machine** ticked.
+1. In Runsheet, open Settings, API keys, and make a key with **Write copy**, **Edit and schedule** and
+   **Upload from this machine** ticked. **Read** is always on.
 2. In Claude Code:
 
    ```

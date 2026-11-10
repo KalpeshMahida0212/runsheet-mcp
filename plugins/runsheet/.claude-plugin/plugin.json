@@ -11,7 +11,7 @@
     "runsheet_api_key": {
       "type": "string",
       "title": "Runsheet API key",
-      "description": "Make one in Runsheet: Settings, API keys. Tick Read, Write, Write copy and Upload from this machine.",
+      "description": "Make one in Runsheet: Settings, API keys. Tick Write copy, Edit and schedule and Upload from this machine (Read is always on).",
       "sensitive": true
     }
   }
