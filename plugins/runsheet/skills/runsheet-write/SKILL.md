@@ -1,6 +1,6 @@
 ---
 name: runsheet-write
-description: "Writes and saves YouTube titles, descriptions, tags, chapters, Shorts hooks, translations and promo posts for the creator's videos with Runsheet, by YouTube's own rules for each field. Runsheet hands over its brief (the rules and the video's facts) and your own model writes the copy, so it costs the creator no Runsheet credits. Use when the user asks for titles, a description, tags, chapters, a hook, translations, or posts for a video, or to fix the copy on a video that is not doing well."
+description: "Writes and saves YouTube titles, descriptions, tags, chapters, Shorts hooks, translations and promo posts for the creator's videos with Runsheet, by YouTube's own rules for each field. Runsheet hands over its brief (the rules and the video's facts) and your own model writes the copy, so it costs the creator no Runsheet credits. A paid Runsheet plan writes without a limit; a free account has 5 writes in all, and when they are used the tool says so with the link to Starter: tell the creator exactly that. Use when the user asks for titles, a description, tags, chapters, a hook, translations, or posts for a video, or to fix the copy on a video that is not doing well."
 ---
 
 # Write a video's copy from Runsheet's brief, then save it to YouTube

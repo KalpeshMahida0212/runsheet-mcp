@@ -69,8 +69,8 @@ Nothing else is downloaded: the frames are drawn in your own Chrome or Edge.
 Set one in the settings, or name it when you ask ("Make this week's Shorts in Neon"). Every style has its own
 transitions, music and sounds, so channels that use different styles never look alike.
 
-**What each plan makes.** A free Runsheet account makes one Short with this skill, in Studio. Starter makes
-15 Shorts a month, Creator 60 and Network 250, in every style. Each video gets a pass from Runsheet before it
+**What each plan makes.** A free Runsheet account makes one Short with this skill, in Studio, and has 5 writes through Claude (titles, descriptions, tags, scripts) in all. Starter makes
+15 Shorts a month, Creator 60 and Network 250, in every style, and writes without a limit. Each video gets a pass from Runsheet before it
 renders, and the paid styles come from Runsheet with that pass. A pass covers one video for two hours and
 six renders, so Claude can check and fix it before it is scheduled.
 
